@@ -1,0 +1,53 @@
+from sparkctl.models import ComputeParams
+from pathlib import Path
+
+from dynaconf import Dynaconf, Validator  # type: ignore
+
+from sparkctl.models import BinaryLocations, SparkRuntimeParams
+
+DEFAULT_SETTINGS_FILENAME = ".sparkctl.toml"
+BINARIES = {
+    "spark_path": Path("/datasets/images/apache_spark/spark-4.0.0-bin-hadoop3"),
+    "hadoop_path": Path("/datasets/images/apache_spark/hadoop-3.4.1"),
+    "hive_tarball": Path("/datasets/images/apache_spark/apache-hive-4.0.1-bin.tar.gz"),
+    "postgresql_jar_file": Path("/datasets/images/apache_spark/postgresql-42.7.4.jar"),
+}
+RUNTIME_PARAMS = {
+    "executor_cores": SparkRuntimeParams.model_fields["executor_cores"].default,
+    "driver_memory_gb": SparkRuntimeParams.model_fields["driver_memory_gb"].default,
+    "node_memory_overhead_gb": SparkRuntimeParams.model_fields["node_memory_overhead_gb"].default,
+    "use_local_storage": SparkRuntimeParams.model_fields["use_local_storage"].default,
+    "start_connect_server": SparkRuntimeParams.model_fields["start_connect_server"].default,
+    "start_history_server": SparkRuntimeParams.model_fields["start_history_server"].default,
+    "start_thrift_server": SparkRuntimeParams.model_fields["start_thrift_server"].default,
+    "enable_dynamic_allocation": SparkRuntimeParams.model_fields[
+        "enable_dynamic_allocation"
+    ].default,
+    "shuffle_partition_multiplier": SparkRuntimeParams.model_fields[
+        "shuffle_partition_multiplier"
+    ].default,
+    "enable_hive_metastore": SparkRuntimeParams.model_fields["enable_hive_metastore"].default,
+    "enable_postgres_hive_metastore": SparkRuntimeParams.model_fields[
+        "enable_postgres_hive_metastore"
+    ].default,
+    "postgres_password": None,
+}
+
+sparkctl_settings = Dynaconf(
+    envvar_prefix="SPARKCTL",
+    settings_files=[
+        DEFAULT_SETTINGS_FILENAME,
+    ],
+    validators=[
+        Validator("BINARIES", default=BinaryLocations(**BINARIES).model_dump(mode="json")),
+        Validator(
+            "RUNTIME_PARAMS", default=SparkRuntimeParams(**RUNTIME_PARAMS).model_dump(mode="json")
+        ),
+        Validator("COMPUTE", default=ComputeParams().model_dump(mode="json")),
+    ],
+)
+
+
+def print_settings() -> None:
+    """Print the current sparkctl settings."""
+    print(sparkctl_settings.to_dict())
