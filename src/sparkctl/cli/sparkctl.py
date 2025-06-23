@@ -28,6 +28,7 @@ def cli():
 _default_config_epilog = """
 Examples:\n
 $ sparkctl default-config ~/apache-spark/spark-4.0.0-bin-hadoop3\n
+$ sparkctl default-config ~/apache-spark/spark-4.0.0-bin-hadoop3 -e local\n
 """
 
 
@@ -40,6 +41,14 @@ $ sparkctl default-config ~/apache-spark/spark-4.0.0-bin-hadoop3\n
     show_default=True,
     help="Directory in which to create the sparkctl config file.",
     callback=lambda *x: Path(x[2]),
+)
+@click.option(
+    "-e",
+    "--compute-environment",
+    type=click.Choice([x.value for x in ComputeEnvironment]),
+    default=ComputeEnvironment.SLURM.value,
+    help="Compute environment",
+    callback=lambda *x: ComputeEnvironment(x[2]),
 )
 @click.option(
     "-H",
@@ -62,13 +71,14 @@ $ sparkctl default-config ~/apache-spark/spark-4.0.0-bin-hadoop3\n
 def create_default_config(
     spark_path: Path,
     directory: Path,
+    compute_environment: ComputeEnvironment,
     hadoop_path: Path | None,
     hive_tarball: Path | None,
     postgresql_jar_file: Path | None,
 ):
     """Create a sparkctl config file.
     This is a one-time requirement when installing sparkctl in a new environment."""
-    config = _create_default_config(spark_path, directory)
+    config = _create_default_config(spark_path, directory, compute_environment)
     if hadoop_path is not None:
         config.binaries.hadoop_path = hadoop_path
     if hive_tarball is not None:
@@ -82,10 +92,12 @@ def create_default_config(
     print(f"Wrote sparkctl settings to {filename}")
 
 
-def _create_default_config(spark_path: Path, directory: Path) -> SparkConfig:
+def _create_default_config(
+    spark_path: Path, directory: Path, compute_environment: ComputeEnvironment
+) -> SparkConfig:
     """Create the default Spark configuration."""
     return SparkConfig(
-        compute=ComputeParams(environment=ComputeEnvironment.SLURM),
+        compute=ComputeParams(environment=compute_environment),
         binaries=BinaryLocations(spark_path=spark_path),
         directories=RuntimeDirectories(base=directory),
         runtime=SparkRuntimeParams(**RUNTIME),

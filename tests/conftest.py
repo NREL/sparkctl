@@ -98,12 +98,11 @@ def extract_tarball(src_file: Path, extract_dir: Path) -> None:
 
 @pytest.fixture
 def setup_local_env(tmp_path):
-    config = _create_default_config(SPARK_DIR, tmp_path)
+    config = _create_default_config(SPARK_DIR, tmp_path, ComputeEnvironment.LOCAL)
     config.binaries.spark_path = SPARK_DIR
     config.binaries.hadoop_path = HADOOP_DIR
     config.binaries.hive_tarball = HIVE_DIR
     config.binaries.postgresql_jar_file = POSTGRES_JAR_FILE
-    config.compute.environment = ComputeEnvironment.LOCAL
     data = config.model_dump(mode="json", exclude={"directories"})
     settings_file = tmp_path / DEFAULT_SETTINGS_FILENAME
     with open(settings_file, "w", encoding="utf-8") as f_out:
