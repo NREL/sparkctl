@@ -12,7 +12,7 @@ BINARIES = {
     "hive_tarball": Path("/datasets/images/apache_spark/apache-hive-4.0.1-bin.tar.gz"),
     "postgresql_jar_file": Path("/datasets/images/apache_spark/postgresql-42.7.4.jar"),
 }
-RUNTIME_PARAMS = {
+RUNTIME = {
     "executor_cores": SparkRuntimeParams.model_fields["executor_cores"].default,
     "driver_memory_gb": SparkRuntimeParams.model_fields["driver_memory_gb"].default,
     "node_memory_overhead_gb": SparkRuntimeParams.model_fields["node_memory_overhead_gb"].default,
@@ -40,9 +40,7 @@ sparkctl_settings = Dynaconf(
     ],
     validators=[
         Validator("BINARIES", default=BinaryLocations(**BINARIES).model_dump(mode="json")),
-        Validator(
-            "RUNTIME_PARAMS", default=SparkRuntimeParams(**RUNTIME_PARAMS).model_dump(mode="json")
-        ),
+        Validator("RUNTIME", default=SparkRuntimeParams(**RUNTIME).model_dump(mode="json")),
         Validator("COMPUTE", default=ComputeParams().model_dump(mode="json")),
     ],
 )

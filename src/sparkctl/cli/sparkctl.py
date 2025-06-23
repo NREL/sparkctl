@@ -5,7 +5,7 @@ import toml
 
 from sparkctl.config import (
     DEFAULT_SETTINGS_FILENAME,
-    RUNTIME_PARAMS,
+    RUNTIME,
     sparkctl_settings,
 )
 from sparkctl.cluster_manager import ClusterManager
@@ -88,7 +88,7 @@ def _create_default_config(spark_path: Path, directory: Path) -> SparkConfig:
         compute=ComputeParams(environment=ComputeEnvironment.SLURM),
         binaries=BinaryLocations(spark_path=spark_path),
         directories=RuntimeDirectories(base=directory),
-        runtime_params=SparkRuntimeParams(**RUNTIME_PARAMS),
+        runtime=SparkRuntimeParams(**RUNTIME),
     )
 
 
@@ -113,14 +113,14 @@ CONFIGURE_OPTIONS = (
     click.option(
         "-e",
         "--executor-cores",
-        default=sparkctl_settings.runtime_params.get("executor_cores"),
+        default=sparkctl_settings.runtime.get("executor_cores"),
         show_default=True,
         help=SparkRuntimeParams.model_fields["executor_cores"].description,
     ),
     click.option(
         "-M",
         "--driver-memory-gb",
-        default=sparkctl_settings.runtime_params.get("driver_memory_gb"),
+        default=sparkctl_settings.runtime.get("driver_memory_gb"),
         show_default=True,
         type=int,
         help=SparkRuntimeParams.model_fields["driver_memory_gb"].description,
@@ -128,7 +128,7 @@ CONFIGURE_OPTIONS = (
     click.option(
         "-o",
         "--node-memory-overhead-gb",
-        default=sparkctl_settings.runtime_params.get("node_memory_overhead_gb"),
+        default=sparkctl_settings.runtime.get("node_memory_overhead_gb"),
         show_default=True,
         type=int,
         help=SparkRuntimeParams.model_fields["node_memory_overhead_gb"].description,
@@ -137,14 +137,14 @@ CONFIGURE_OPTIONS = (
         "-D",
         "--dynamic-allocation",
         is_flag=True,
-        default=sparkctl_settings.runtime_params.get("enable_dynamic_allocation"),
+        default=sparkctl_settings.runtime.get("enable_dynamic_allocation"),
         show_default=True,
         help=SparkRuntimeParams.model_fields["enable_dynamic_allocation"].description,
     ),
     click.option(
         "-m",
         "--shuffle-partition-multiplier",
-        default=sparkctl_settings.runtime_params.get("shuffle_partition_multiplier"),
+        default=sparkctl_settings.runtime.get("shuffle_partition_multiplier"),
         show_default=True,
         help=SparkRuntimeParams.model_fields["shuffle_partition_multiplier"].description,
     ),
@@ -152,7 +152,7 @@ CONFIGURE_OPTIONS = (
         "-L",
         "--local-storage",
         is_flag=True,
-        default=sparkctl_settings.runtime_params.get("use_local_storage"),
+        default=sparkctl_settings.runtime.get("use_local_storage"),
         show_default=True,
         help=SparkRuntimeParams.model_fields["use_local_storage"].description,
     ),
@@ -160,7 +160,7 @@ CONFIGURE_OPTIONS = (
         "-c",
         "--connect-server",
         is_flag=True,
-        default=sparkctl_settings.runtime_params.get("start_connect_server"),
+        default=sparkctl_settings.runtime.get("start_connect_server"),
         show_default=True,
         help=SparkRuntimeParams.model_fields["start_connect_server"].description,
     ),
@@ -168,7 +168,7 @@ CONFIGURE_OPTIONS = (
         "-H",
         "--history-server",
         is_flag=True,
-        default=sparkctl_settings.runtime_params.get("start_history_server"),
+        default=sparkctl_settings.runtime.get("start_history_server"),
         show_default=True,
         help=SparkRuntimeParams.model_fields["start_history_server"].description,
     ),
@@ -176,7 +176,7 @@ CONFIGURE_OPTIONS = (
         "-t",
         "--thrift-server",
         is_flag=True,
-        default=sparkctl_settings.runtime_params.get("start_thrift_server"),
+        default=sparkctl_settings.runtime.get("start_thrift_server"),
         show_default=True,
         help=SparkRuntimeParams.model_fields["start_thrift_server"].description,
     ),
@@ -184,7 +184,7 @@ CONFIGURE_OPTIONS = (
         "-h",
         "--hive-metastore",
         is_flag=True,
-        default=sparkctl_settings.runtime_params.get("enable_hive_metastore"),
+        default=sparkctl_settings.runtime.get("enable_hive_metastore"),
         show_default=True,
         help=SparkRuntimeParams.model_fields["enable_hive_metastore"].description,
     ),
@@ -192,7 +192,7 @@ CONFIGURE_OPTIONS = (
         "-p",
         "--postgres-hive-metastore",
         is_flag=True,
-        default=sparkctl_settings.runtime_params.get("enable_postgres_hive_metastore"),
+        default=sparkctl_settings.runtime.get("enable_postgres_hive_metastore"),
         show_default=True,
         help=SparkRuntimeParams.model_fields["enable_postgres_hive_metastore"].description,
     ),
@@ -333,7 +333,7 @@ def _configure_common(
             hive_tarball=sparkctl_settings.binaries.get("hive_tarball"),
             postgresql_jar_file=sparkctl_settings.binaries.get("postgresql_jar_file"),
         ),
-        runtime_params=SparkRuntimeParams(
+        runtime=SparkRuntimeParams(
             executor_cores=executor_cores,
             driver_memory_gb=driver_memory_gb,
             node_memory_overhead_gb=node_memory_overhead_gb,

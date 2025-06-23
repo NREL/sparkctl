@@ -181,6 +181,6 @@ class SparkConfig(SparkctlBaseModel):
     """Contains all Spark configuration parameters."""
 
     binaries: BinaryLocations
-    runtime_params: SparkRuntimeParams = SparkRuntimeParams()
+    runtime: SparkRuntimeParams = SparkRuntimeParams()
     directories: RuntimeDirectories = RuntimeDirectories()
     compute: ComputeParams = ComputeParams()

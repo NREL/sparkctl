@@ -10,7 +10,7 @@ from sparkctl import (
 
 def test_cluster_manager(setup_local_env: tuple[SparkConfig, Path]):
     config, output_dir = setup_local_env
-    config.runtime_params.start_connect_server = True
+    config.runtime.start_connect_server = True
     config.directories.base = output_dir
     config.directories.spark_scratch = output_dir / "spark_scratch"
     config.directories.metastore_dir = output_dir / "metastore_db"

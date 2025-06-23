@@ -67,7 +67,7 @@ class ClusterManager:
         with open(spark_env, "a", encoding="utf-8") as f_out:
             f_out.write(f"SPARK_LOG_DIR={scratch}/logs\n")
             f_out.write(f"SPARK_WORKER_DIR={scratch}/workers\n")
-            if self._config.runtime_params.use_local_storage:
+            if self._config.runtime.use_local_storage:
                 scratch = self._intf.get_scratch_dir()
             f_out.write(f"SPARK_LOCAL_DIRS={scratch}/local\n")
             logger.info("Configured Spark workers to use {} for shuffle data.", scratch)
@@ -110,7 +110,7 @@ class ClusterManager:
     def _start(self, runner: SparkProcessRunner, tracker: _ProcessTracker) -> None:
         workers = self._read_workers()
         is_single_node_cluster = self._is_single_node_cluster(workers)
-        if self._config.runtime_params.enable_postgres_hive_metastore:
+        if self._config.runtime.enable_postgres_hive_metastore:
             self._setup_postgres()
             tracker.started_postgres = True
 
@@ -118,7 +118,7 @@ class ClusterManager:
         tracker.started_master = True
         logger.info("Started Spark master processes on {}", gethostname())
 
-        if self._config.runtime_params.start_connect_server:
+        if self._config.runtime.start_connect_server:
             runner.start_connect_server()
             tracker.started_connect_server = True
             logger.info("Started Spark connect server")
@@ -128,7 +128,7 @@ class ClusterManager:
             tracker.started_history_server = True
             logger.info("Started Spark history server")
 
-        if self._config.runtime_params.start_thrift_server:
+        if self._config.runtime.start_thrift_server:
             runner.start_thrift_server()
             tracker.started_thrift_server = True
             logger.info("Started Apache Thrift Server")
@@ -157,7 +157,7 @@ class ClusterManager:
         else:
             workers = self._read_workers()
             runner.stop_worker_processes(workers)
-        if self._config.runtime_params.enable_postgres_hive_metastore:
+        if self._config.runtime.enable_postgres_hive_metastore:
             self._stop_postgres()
 
     def _get_spark_defaults_template(self) -> Path:
@@ -169,9 +169,9 @@ class ClusterManager:
     def _get_worker_memory_gb(self, driver_memory_gb: int) -> int:
         node_memory_overhead_gb = self._intf.get_node_memory_overhead_gb(
             driver_memory_gb,
-            self._config.runtime_params.node_memory_overhead_gb,
+            self._config.runtime.node_memory_overhead_gb,
         )
-        if self._config.runtime_params.enable_postgres_hive_metastore:
+        if self._config.runtime.enable_postgres_hive_metastore:
             # Postgres should be idle most of the time. We aren't adding any CPU overhead.
             # Add a conservative cushion for memory.
             node_memory_overhead_gb += 2
@@ -183,7 +183,7 @@ class ClusterManager:
         return len(workers) == 1 and gethostname() == workers[0]
 
     def _add_spark_settings_to_defaults_file(self, defaults_file: Path) -> None:
-        rt_params = self._config.runtime_params
+        rt_params = self._config.runtime
         with open(defaults_file, "a") as f_out:
             f_out.write(
                 """
@@ -232,29 +232,27 @@ spark.worker.cleanup.enabled = true
 
     def _config_executors(self, defaults_file: Path) -> None:
         num_workers = self._intf.get_num_workers()
-        worker_memory_gb = self._get_worker_memory_gb(self._config.runtime_params.driver_memory_gb)
+        worker_memory_gb = self._get_worker_memory_gb(self._config.runtime.driver_memory_gb)
         worker_num_cpus = self._intf.get_worker_num_cpus()
         # Leave one CPU for OS and management software.
         worker_num_cpus -= 1
 
-        min_executors_per_node = worker_num_cpus // self._config.runtime_params.executor_cores
+        min_executors_per_node = worker_num_cpus // self._config.runtime.executor_cores
         executor_memory_gb = worker_memory_gb // min_executors_per_node
         executors_by_mem = worker_memory_gb // executor_memory_gb
-        executors_by_cpu = worker_num_cpus // self._config.runtime_params.executor_cores
+        executors_by_cpu = worker_num_cpus // self._config.runtime.executor_cores
         if executors_by_cpu <= executors_by_mem:
             executors_per_node = executors_by_cpu
         else:
             executors_per_node = executors_by_mem
 
-        total_num_cpus = (
-            executors_per_node * self._config.runtime_params.executor_cores * num_workers
-        )
+        total_num_cpus = executors_per_node * self._config.runtime.executor_cores * num_workers
         total_num_executors = executors_per_node * num_workers
-        partitions = total_num_cpus * self._config.runtime_params.shuffle_partition_multiplier
+        partitions = total_num_cpus * self._config.runtime.shuffle_partition_multiplier
         with open(defaults_file, "a") as f_out:
             f_out.write(
                 f"""
-spark.executor.cores {self._config.runtime_params.executor_cores}
+spark.executor.cores {self._config.runtime.executor_cores}
 spark.sql.shuffle.partitions {partitions}
 spark.executor.memory {executor_memory_gb}g
 """
@@ -267,7 +265,7 @@ spark.executor.memory {executor_memory_gb}g
         )
 
     def _enable_metastore(self, defaults_file: Path) -> None:
-        rt_params = self._config.runtime_params
+        rt_params = self._config.runtime
         hive_site_file = self._config.directories.get_hive_site_file()
         with open(defaults_file, "a") as f_out:
             f_out.write(
@@ -346,7 +344,7 @@ spark.history.fs.logDirectory file://{events_dir}
         script = self._config.compute.postgres.get_script_path("start_container")
         pg_data = self._config.directories.base / "pg_data"
         pg_run = self._config.directories.base / "pg_run"
-        cmd = f"bash {script} {pg_data} {pg_run} {self._config.runtime_params.postgres_password}"
+        cmd = f"bash {script} {pg_data} {pg_run} {self._config.runtime.postgres_password}"
         check_run_command(cmd)
         setup_postgres_metastore(self._config)
 

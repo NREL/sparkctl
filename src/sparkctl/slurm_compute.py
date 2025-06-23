@@ -16,7 +16,7 @@ class SlurmCompute(ComputeInterface):
         if self.is_heterogeneous_slurm_job():
             return node_memory_overhead_gb
 
-        return driver_memory_gb + self._config.runtime_params.node_memory_overhead_gb
+        return driver_memory_gb + self._config.runtime.node_memory_overhead_gb
 
     def get_num_workers(self) -> int:
         master_node = gethostname()

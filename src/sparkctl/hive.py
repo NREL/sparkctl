@@ -13,7 +13,7 @@ def setup_postgres_metastore(config: SparkConfig) -> None:
     pg_exists = bool(list(pg_data_dir.iterdir()))
     setup_script = config.compute.postgres.get_script_path("setup_metastore")
     check_run_command(
-        f"bash {setup_script} {str(pg_exists).lower()} {config.runtime_params.postgres_password}"
+        f"bash {setup_script} {str(pg_exists).lower()} {config.runtime.postgres_password}"
     )
     if not pg_exists:
         init_hive(config)
@@ -26,7 +26,7 @@ def init_hive(config: SparkConfig):
         if val is None:
             msg = f"{field} cannot be None"
             raise ValueError(msg)
-    if config.runtime_params.postgres_password is None:
+    if config.runtime.postgres_password is None:
         msg = "postgres_password cannot be None"
         raise ValueError(msg)
 
@@ -47,9 +47,7 @@ def init_hive(config: SparkConfig):
         config.binaries.postgresql_jar_file,
         hive_home / "lib" / config.binaries.postgresql_jar_file.name,
     )
-    write_postgres_hive_site_file(
-        config.runtime_params.postgres_password, hive_conf / "hive-site.xml"
-    )
+    write_postgres_hive_site_file(config.runtime.postgres_password, hive_conf / "hive-site.xml")
     cwd = os.getcwd()
     os.chdir(hive_conf)
     try:
