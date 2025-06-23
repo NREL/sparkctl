@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 from socket import gethostname
 from typing import Any
@@ -54,11 +55,16 @@ class SlurmCompute(ComputeInterface):
     def get_worker_num_cpus(self) -> int:
         het_cpus = os.getenv("SLURM_JOB_CPUS_PER_NODE_HET_GROUP_1")
         if het_cpus is not None:
-            num_cpus = het_cpus.split("(")[1]
+            regex = re.compile(r"^(\d+)\(x(\d+)")
+            match = regex.search(het_cpus)
+            if match is None:
+                msg = f"Failed to parse SLURM_JOB_CPUS_PER_NODE_HET_GROUP_1 = {het_cpus}"
+                raise ValueError(msg)
+            num_cpus = int(match.group(1)) * int(match.group(2))
         else:
-            num_cpus = os.environ["SLURM_CPUS_ON_NODE"]
+            num_cpus = int(os.environ["SLURM_CPUS_ON_NODE"])
 
-        return int(num_cpus)
+        return num_cpus
 
     def is_heterogeneous_slurm_job(self) -> bool:
         return "SLURM_HET_SIZE" in os.environ
