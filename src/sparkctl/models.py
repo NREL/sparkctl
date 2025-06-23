@@ -154,9 +154,27 @@ class ComputeEnvironment(StrEnum):
     SLURM = "slurm"
 
 
+class PostgresScripts(SparkctlBaseModel):
+    """Scripts that setup a PostgreSQL database for use in a Hive metastore.
+    Relative paths are assumed to be based on the root path of the sparkctl package.
+    Absolute paths can be anywhere on the filesystem.
+    """
+
+    start_container: str = "postgres/start_container.sh"
+    stop_container: str = "postgres/stop_container.sh"
+    setup_metastore: str = "postgres/setup_metastore.sh"
+
+    def get_script_path(self, name: str) -> Path:
+        """Return the path on the filesystem for the script"""
+        path = Path(getattr(self, name))
+        if path.is_absolute():
+            return path
+        return Path(__file__).parent / path
+
+
 class ComputeParams(SparkctlBaseModel):
     environment: ComputeEnvironment = ComputeEnvironment.SLURM
-    extension: str | None = None
+    postgres: PostgresScripts = PostgresScripts()
 
 
 class SparkConfig(SparkctlBaseModel):

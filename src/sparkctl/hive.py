@@ -11,7 +11,7 @@ def setup_postgres_metastore(config: SparkConfig) -> None:
     """Setup a PostgreSQL-based Hive metastore."""
     pg_data_dir = config.directories.base / "pg_data"
     pg_exists = bool(list(pg_data_dir.iterdir()))
-    setup_script = Path(__file__).parent / "setup_postgres_metastore.sh"
+    setup_script = config.compute.postgres.get_script_path("setup_metastore")
     check_run_command(
         f"bash {setup_script} {str(pg_exists).lower()} {config.runtime_params.postgres_password}"
     )

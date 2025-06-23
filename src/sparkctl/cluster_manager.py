@@ -343,7 +343,7 @@ spark.history.fs.logDirectory file://{events_dir}
         return lines
 
     def _setup_postgres(self) -> None:
-        script = Path(__file__).parent / "start_postgres_container.sh"
+        script = self._config.compute.postgres.get_script_path("start_container")
         pg_data = self._config.directories.base / "pg_data"
         pg_run = self._config.directories.base / "pg_run"
         cmd = f"bash {script} {pg_data} {pg_run} {self._config.runtime_params.postgres_password}"
@@ -351,7 +351,7 @@ spark.history.fs.logDirectory file://{events_dir}
         setup_postgres_metastore(self._config)
 
     def _stop_postgres(self) -> None:
-        script = Path(__file__).parent / "stop_postgres_container.sh"
+        script = self._config.compute.postgres.get_script_path("stop_container")
         ret = run_command(f"bash {script}")
         if ret != 0:
             logger.warning("Failed to stop the postgres container: {}", ret)
