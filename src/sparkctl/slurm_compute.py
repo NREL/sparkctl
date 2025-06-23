@@ -22,8 +22,10 @@ class SlurmCompute(ComputeInterface):
     def get_num_workers(self) -> int:
         master_node = gethostname()
         num_workers = 0
-        for node_name in self.get_node_names():
-            if not self.is_heterogeneous_slurm_job() and node_name == master_node:
+        node_names = self.get_node_names()
+        is_het = self.is_heterogeneous_slurm_job()
+        for node_name in node_names:
+            if not is_het or node_name != master_node:
                 num_workers += 1
 
         return num_workers
@@ -55,16 +57,17 @@ class SlurmCompute(ComputeInterface):
     def get_worker_num_cpus(self) -> int:
         het_cpus = os.getenv("SLURM_JOB_CPUS_PER_NODE_HET_GROUP_1")
         if het_cpus is not None:
-            regex = re.compile(r"^(\d+)\(x(\d+)")
+            # Example of 4 nodes with 104 CPUs each: 104(x4)
+            regex = re.compile(r"^(\d+)\(x\d+")
             match = regex.search(het_cpus)
             if match is None:
                 msg = f"Failed to parse SLURM_JOB_CPUS_PER_NODE_HET_GROUP_1 = {het_cpus}"
                 raise ValueError(msg)
-            num_cpus = int(match.group(1)) * int(match.group(2))
+            num_cpus = match.group(1)
         else:
-            num_cpus = int(os.environ["SLURM_CPUS_ON_NODE"])
+            num_cpus = os.environ["SLURM_CPUS_ON_NODE"]
 
-        return num_cpus
+        return int(num_cpus)
 
     def is_heterogeneous_slurm_job(self) -> bool:
         return "SLURM_HET_SIZE" in os.environ
@@ -97,7 +100,10 @@ def get_node_names(job_id: str) -> list[str]:
     job_id = os.environ["SLURM_JOB_ID"]
     output: dict[str, Any] = {}
     check_run_command(f'squeue -j {job_id} --format="%5D %1000N" -h', output=output)
-    hosts = output["stdout"].split()[1]  # TODO
-    output.clear()
-    check_run_command(f"scontrol show hostnames {hosts}", output=output)
-    return output["stdout"].split()
+    host_lists = [x.strip().split()[1] for x in output["stdout"].splitlines() if x]
+    final: list[str] = []
+    for hosts in host_lists:
+        output.clear()
+        check_run_command(f"scontrol show hostnames {hosts}", output=output)
+        final += output["stdout"].split()
+    return final
