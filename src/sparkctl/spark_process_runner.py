@@ -98,7 +98,7 @@ export SPARK_CONF_DIR={self._conf_dir}
         cmd = f"{script} {self._url}"
         if memory_gb is not None:
             cmd += f" -m {memory_gb}G"
-        check_run_command(cmd)
+        self._check_run_command(cmd)
 
     def _start_master_cmd(self) -> str:
         return self._sbin_cmd("start-master.sh")
