@@ -59,10 +59,12 @@ class ClusterManager:
         shutil.copyfile(self._get_spark_log_file(), self._config.directories.get_spark_log_file())
         spark_defaults_template = self._get_spark_defaults_template()
         spark_defaults = self._config.directories.get_spark_defaults_file()
+        spark_env_template = self._get_spark_env_template()
         spark_env = self._config.directories.get_spark_env_file()
         scratch = self._config.directories.spark_scratch.absolute()
         scratch.mkdir(exist_ok=True)
         shutil.copyfile(spark_defaults_template, spark_defaults)
+        shutil.copyfile(spark_env_template, spark_env)
         self._add_spark_settings_to_defaults_file(spark_defaults)
         with open(spark_env, "a", encoding="utf-8") as f_out:
             f_out.write(f"SPARK_LOG_DIR={scratch}/logs\n")
@@ -70,6 +72,8 @@ class ClusterManager:
             if self._config.runtime.use_local_storage:
                 scratch = self._intf.get_scratch_dir()
             f_out.write(f"SPARK_LOCAL_DIRS={scratch}/local\n")
+            if self._config.runtime.python_path is not None:
+                f_out.write(f"PYSPARK_PYTHON={self._config.runtime.python_path}\n")
             logger.info("Configured Spark workers to use {} for shuffle data.", scratch)
 
         workers = self._intf.get_worker_node_names()
@@ -162,6 +166,9 @@ class ClusterManager:
 
     def _get_spark_defaults_template(self) -> Path:
         return Path(next(iter(sparkctl.__path__))) / "conf" / "spark-defaults.conf.template"
+
+    def _get_spark_env_template(self) -> Path:
+        return Path(next(iter(sparkctl.__path__))) / "conf" / "spark-env.sh"
 
     def _get_spark_log_file(self) -> Path:
         return Path(next(iter(sparkctl.__path__))) / "conf" / "log4j2.properties"

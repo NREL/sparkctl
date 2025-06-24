@@ -1,6 +1,6 @@
-from pathlib import Path
 import shutil
 from enum import StrEnum
+from pathlib import Path
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -86,6 +86,11 @@ class SparkRuntimeParams(SparkctlBaseModel):
         default=None,
         description="Password for PostgreSQL.",
     )
+    python_path: str | None = Field(
+        default=None,
+        description="Python path to set for Spark workers. Use the Python inside the Spark "
+        "distribution by default.",
+    )
 
     @field_validator("postgres_password")
     @classmethod
@@ -131,7 +136,7 @@ class RuntimeDirectories(SparkctlBaseModel):
         return self.get_spark_conf_dir() / "spark-env.sh"
 
     def get_spark_log_file(self) -> Path:
-        """Return the file path to spark-env.sh"""
+        """Return the file path to log properties file"""
         return self.get_spark_conf_dir() / "log4j2.properties"
 
     def get_workers_file(self) -> Path:

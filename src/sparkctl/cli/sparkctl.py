@@ -1,7 +1,9 @@
+import sys
 from pathlib import Path
 
 import rich_click as click
 import toml
+from loguru import logger
 
 from sparkctl.config import (
     DEFAULT_SETTINGS_FILENAME,
@@ -216,6 +218,19 @@ CONFIGURE_OPTIONS = (
         help=RuntimeDirectories.model_fields["metastore_dir"].description,
         callback=lambda *x: Path(x[2]),
     ),
+    click.option(
+        "-P",
+        "--python-path",
+        help=SparkRuntimeParams.model_fields["python_path"].description,
+    ),
+    click.option(
+        "--use-current-python/--no-use-current-python",
+        is_flag=True,
+        default=True,
+        show_default=True,
+        help="Use the Python executable in the current environment for Spark workers. "
+        "--python-path takes precedence.",
+    ),
 )
 
 
@@ -253,6 +268,8 @@ def configure(
     hive_metastore: bool,
     postgres_hive_metastore: bool,
     metastore_dir: Path,
+    python_path: str | None,
+    use_current_python: bool,
 ):
     """Create a Spark cluster configuration. Use this command to create a Spark configuration
     that can be manually modified before starting.
@@ -272,6 +289,8 @@ def configure(
         hive_metastore=hive_metastore,
         postgres_hive_metastore=postgres_hive_metastore,
         metastore_dir=metastore_dir,
+        python_path=python_path,
+        use_current_python=use_current_python,
     )
 
 
@@ -300,6 +319,8 @@ def configure_and_start(
     hive_metastore: bool,
     postgres_hive_metastore: bool,
     metastore_dir: Path,
+    python_path: str | None,
+    use_current_python: bool,
 ):
     """Create a Spark cluster configuration and start the cluster."""
     mgr = _configure_common(
@@ -317,6 +338,8 @@ def configure_and_start(
         hive_metastore=hive_metastore,
         postgres_hive_metastore=postgres_hive_metastore,
         metastore_dir=metastore_dir,
+        python_path=python_path,
+        use_current_python=use_current_python,
     )
     mgr.start()
 
@@ -336,8 +359,13 @@ def _configure_common(
     hive_metastore: bool,
     postgres_hive_metastore: bool,
     metastore_dir: Path,
+    python_path: str | None,
+    use_current_python: bool,
 ) -> ClusterManager:
     setup_logging(filename="sparkctl.log", mode="a")
+    if python_path is None and use_current_python:
+        logger.info("Use the current Python executable for Spark workers.")
+        python_path = sys.executable
     config = SparkConfig(
         binaries=BinaryLocations(
             spark_path=sparkctl_settings.binaries.spark_path,
@@ -357,6 +385,7 @@ def _configure_common(
             start_thrift_server=thrift_server,
             enable_hive_metastore=hive_metastore,
             enable_postgres_hive_metastore=postgres_hive_metastore,
+            python_path=python_path,
         ),
         directories=RuntimeDirectories(
             base=directory,
