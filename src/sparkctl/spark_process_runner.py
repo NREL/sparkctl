@@ -12,6 +12,7 @@ class SparkProcessRunner:
 
     def __init__(self, config: SparkConfig, url: str) -> None:
         self._spark_path = config.binaries.spark_path
+        self._java_path = config.binaries.java_path
         self._conf_dir = config.directories.get_spark_conf_dir()
         self._config = config
         self._url = url
@@ -148,4 +149,5 @@ export SPARK_CONF_DIR={self._conf_dir}
     def _get_env(self) -> dict[str, Any]:
         env = {k: v for k, v in os.environ.items()}
         env["SPARK_CONF_DIR"] = str(self._conf_dir)
+        env["JAVA_HOME"] = str(self._java_path)
         return env

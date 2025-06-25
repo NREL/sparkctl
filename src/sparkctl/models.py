@@ -26,6 +26,7 @@ class BinaryLocations(SparkctlBaseModel):
     """
 
     spark_path: Path = Field(description="Path to the Spark binaries.")
+    java_path: Path = Field(description="Path to the Java binaries.")
     hadoop_path: Path | None = Field(default=None, description="Path to the Hadoop binaries.")
     hive_tarball: Path | None = Field(default=None, description="Path to the Hive binaries.")
     postgresql_jar_file: Path | None = Field(

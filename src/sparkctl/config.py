@@ -8,6 +8,7 @@ from sparkctl.models import BinaryLocations, SparkRuntimeParams
 DEFAULT_SETTINGS_FILENAME = ".sparkctl.toml"
 BINARIES = {
     "spark_path": Path("/datasets/images/apache_spark/spark-4.0.0-bin-hadoop3"),
+    "java_path": Path("/datasets/images/apache_spark/jdk-21.0.2.jdk"),
     "hadoop_path": Path("/datasets/images/apache_spark/hadoop-3.4.1"),
     "hive_tarball": Path("/datasets/images/apache_spark/apache-hive-4.0.1-bin.tar.gz"),
     "postgresql_jar_file": Path("/datasets/images/apache_spark/postgresql-42.7.4.jar"),

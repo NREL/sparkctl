@@ -135,6 +135,7 @@ dmypy.json
 tests/data/apache-hive-4.0.1-bin*
 tests/data/spark-4.0.0-bin-hadoop3*
 tests/data/postgresql*
+tests/data/jdk-21.0.2.jdk*
 conf
 spark_scratch
 .sparkctl.toml

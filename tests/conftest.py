@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 import tarfile
 from pathlib import Path
 from typing import Any
@@ -35,6 +36,7 @@ POSTGRES_JAR_NAME = "postgresql-42.7.4.jar"
 POSTGRES_JAR_URL = f"https://jdbc.postgresql.org/download/{POSTGRES_JAR_NAME}"
 POSTGRES_JAR_FILE = Path("tests") / "data" / POSTGRES_JAR_NAME
 
+
 TARBALLS: list[dict[str, Any]] = [
     {
         "dir_path": SPARK_DIR,
@@ -55,6 +57,30 @@ TARBALLS: list[dict[str, Any]] = [
         "extract": False,
     },
 ]
+
+JAVA_DIR_NAME = "jdk-21.0.2.jdk"
+if sys.platform == "linux":
+    JAVA_GZ_NAME = "openjdk-21.0.1_linux-x64_bin.tar.gz"
+    JAVA_URL = f"https://download.java.net/java/GA/jdk21.0.1/415e3f918a1f4062a0074a2794853d0d/12/GPL/{JAVA_GZ_NAME}"
+    JAVA_DIR_GZ = Path("tests") / "data" / JAVA_GZ_NAME
+    JAVA_DIR = Path("tests") / "data" / JAVA_DIR_NAME
+elif sys.platform == "darwin":
+    JAVA_GZ_NAME = "openjdk-21.0.2_macos-aarch64_bin.tar.gz"
+    JAVA_URL = f"https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/{JAVA_GZ_NAME}"
+    JAVA_DIR_GZ = Path("tests") / "data" / JAVA_GZ_NAME
+    JAVA_DIR = Path("tests") / "data" / JAVA_DIR_NAME
+else:
+    msg = f"Only Linux and MacOS are supported: {sys.platform}"
+    raise Exception(msg)
+
+TARBALLS.append(
+    {
+        "dir_path": JAVA_DIR,
+        "dir_gz": JAVA_DIR_GZ,
+        "url": JAVA_URL,
+        "extract": True,
+    },
+)
 
 
 def pytest_sessionstart(session):
@@ -98,8 +124,15 @@ def extract_tarball(src_file: Path, extract_dir: Path) -> None:
 
 @pytest.fixture
 def setup_local_env(tmp_path):
-    config = _create_default_config(SPARK_DIR, tmp_path, ComputeEnvironment.LOCAL)
+    config = _create_default_config(SPARK_DIR, JAVA_DIR, tmp_path, ComputeEnvironment.LOCAL)
     config.binaries.spark_path = SPARK_DIR
+    match sys.platform:
+        case "linux":
+            config.binaries.java_path = JAVA_DIR
+        case "darwin":
+            config.binaries.java_path = JAVA_DIR / "Contents" / "Home"
+        case _:
+            assert False
     config.binaries.hadoop_path = HADOOP_DIR
     config.binaries.hive_tarball = HIVE_DIR
     config.binaries.postgresql_jar_file = POSTGRES_JAR_FILE

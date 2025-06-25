@@ -36,6 +36,7 @@ $ sparkctl default-config ~/apache-spark/spark-4.0.0-bin-hadoop3 -e local\n
 
 @click.command(name="default-config", epilog=_default_config_epilog)
 @click.argument("spark_path", type=click.Path(exists=True), callback=lambda *x: Path(x[2]))
+@click.argument("java_path", type=click.Path(exists=True), callback=lambda *x: Path(x[2]))
 @click.option(
     "-d",
     "--directory",
@@ -72,6 +73,7 @@ $ sparkctl default-config ~/apache-spark/spark-4.0.0-bin-hadoop3 -e local\n
 )
 def create_default_config(
     spark_path: Path,
+    java_path: Path,
     directory: Path,
     compute_environment: ComputeEnvironment,
     hadoop_path: Path | None,
@@ -80,7 +82,7 @@ def create_default_config(
 ):
     """Create a sparkctl config file.
     This is a one-time requirement when installing sparkctl in a new environment."""
-    config = _create_default_config(spark_path, directory, compute_environment)
+    config = _create_default_config(spark_path, java_path, directory, compute_environment)
     if hadoop_path is not None:
         config.binaries.hadoop_path = hadoop_path
     if hive_tarball is not None:
@@ -95,12 +97,12 @@ def create_default_config(
 
 
 def _create_default_config(
-    spark_path: Path, directory: Path, compute_environment: ComputeEnvironment
+    spark_path: Path, java_path: Path, directory: Path, compute_environment: ComputeEnvironment
 ) -> SparkConfig:
     """Create the default Spark configuration."""
     return SparkConfig(
         compute=ComputeParams(environment=compute_environment),
-        binaries=BinaryLocations(spark_path=spark_path),
+        binaries=BinaryLocations(spark_path=spark_path, java_path=java_path),
         directories=RuntimeDirectories(base=directory),
         runtime=SparkRuntimeParams(**RUNTIME),
     )
@@ -369,6 +371,7 @@ def _configure_common(
     config = SparkConfig(
         binaries=BinaryLocations(
             spark_path=sparkctl_settings.binaries.spark_path,
+            java_path=sparkctl_settings.binaries.java_path,
             hadoop_path=sparkctl_settings.binaries.get("hadoop_path"),
             hive_tarball=sparkctl_settings.binaries.get("hive_tarball"),
             postgresql_jar_file=sparkctl_settings.binaries.get("postgresql_jar_file"),
