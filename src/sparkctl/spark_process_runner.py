@@ -65,6 +65,7 @@ class SparkProcessRunner:
         start_script = self._sbin_cmd("start-worker.sh")
         content = f"""#!/bin/bash
 export SPARK_CONF_DIR={self._conf_dir}
+export JAVA_HOME={self._java_path}
 {start_script} {self._url} -m {memory_gb}g
 """
         tmp_script = self._conf_dir / "tmp_start_worker.sh"
@@ -81,6 +82,7 @@ export SPARK_CONF_DIR={self._conf_dir}
         stop_script = self._stop_worker_cmd()
         content = f"""#!/bin/bash
 export SPARK_CONF_DIR={self._conf_dir}
+export JAVA_HOME={self._java_path}
 {stop_script}
 """
         tmp_script = self._conf_dir / "tmp_stop_worker.sh"
