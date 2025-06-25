@@ -3,11 +3,17 @@ This package extends the Apache Spark launcher scripts to support ephemeral clus
 compute nodes.
 
 ## Prerequisites
-The package requires that you download Apache Spark and optional dependencies.
+The package requires that you download Apache Spark, a supported version of Java, and optional
+dependencies.
 
-Download and extract this tarball to a directory accessible on all compute nodes:
+Download and extract these tarballs to a directory accessible on all compute nodes:
 
 - https://dlcdn.apache.org/spark/spark-4.0.0/spark-4.0.0-bin-hadoop3.tgz
+- https://download.java.net/java/GA/jdk21.0.1/415e3f918a1f4062a0074a2794853d0d/12/GPL/openjdk-21.0.1_linux-x64_bin.tar.gz
+
+If running on a Mac, download this version of Java instead:
+
+- https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/openjdk-21.0.2_macos-aarch64_bin.tar.gz
 
 Download these packages if you will be using a PostgreSQL-based Hive metastore. Extract
 Hadoop but not Hive.
@@ -36,7 +42,7 @@ These instructions assume you are in Slurm HPC environment. Adjust accordingly.
 
 If using Spark only:
 ```console
-sparkctl default-config -e slurm <path-to-apache-spark>
+sparkctl default-config -e slurm <path-to-apache-spark> <path-to-java>
 ```
 
 If using a PostgreSQL-based Hive metastore:
@@ -167,7 +173,7 @@ your `sbatch` command.
 By default, if a compute node fails (kernel panic, hardware failure, etc.), Slurm will terminate
 the job.
 
-This behavior can be disadvantageous for a Spark cluster because it can tolerate worker node
+This behavior can be advantageous for a Spark cluster because it can tolerate worker node
 failures in many cases. If a job is almost complete when a failure occurs, it may be able to retry
 the failed tasks on a different node and complete successfully.
 

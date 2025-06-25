@@ -29,8 +29,8 @@ def cli():
 
 _default_config_epilog = """
 Examples:\n
-$ sparkctl default-config ~/apache-spark/spark-4.0.0-bin-hadoop3\n
-$ sparkctl default-config ~/apache-spark/spark-4.0.0-bin-hadoop3 -e local\n
+$ sparkctl default-config ~/apache-spark/spark-4.0.0-bin-hadoop3 ~/jdk-21.0.2\n
+$ sparkctl default-config ~/apache-spark/spark-4.0.0-bin-hadoop3 ~/jdk-21.0.2 -e local\n
 """
 
 
