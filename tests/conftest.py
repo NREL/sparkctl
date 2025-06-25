@@ -58,15 +58,16 @@ TARBALLS: list[dict[str, Any]] = [
     },
 ]
 
-JAVA_DIR_NAME = "jdk-21.0.2.jdk"
 if sys.platform == "linux":
-    JAVA_GZ_NAME = "openjdk-21.0.1_linux-x64_bin.tar.gz"
-    JAVA_URL = f"https://download.java.net/java/GA/jdk21.0.1/415e3f918a1f4062a0074a2794853d0d/12/GPL/{JAVA_GZ_NAME}"
+    JAVA_DIR_NAME = "jdk-21.0.7"
+    JAVA_GZ_NAME = "jdk-21_linux-x64_bin.tar.gz"
+    JAVA_URL = f"https://download.oracle.com/java/21/latest/{JAVA_GZ_NAME}"
     JAVA_DIR_GZ = Path("tests") / "data" / JAVA_GZ_NAME
     JAVA_DIR = Path("tests") / "data" / JAVA_DIR_NAME
 elif sys.platform == "darwin":
-    JAVA_GZ_NAME = "openjdk-21.0.2_macos-aarch64_bin.tar.gz"
-    JAVA_URL = f"https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/{JAVA_GZ_NAME}"
+    JAVA_DIR_NAME = "jdk-21.0.7.jdk"
+    JAVA_GZ_NAME = "jdk-21_macos-aarch64_bin.tar.gz"
+    JAVA_URL = f"https://download.oracle.com/java/21/latest/{JAVA_GZ_NAME}"
     JAVA_DIR_GZ = Path("tests") / "data" / JAVA_GZ_NAME
     JAVA_DIR = Path("tests") / "data" / JAVA_DIR_NAME
 else:
