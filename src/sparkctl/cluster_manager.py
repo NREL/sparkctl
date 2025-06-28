@@ -1,7 +1,6 @@
 import fileinput
 import re
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 from socket import gethostname
 from typing import Self
@@ -12,30 +11,21 @@ import sparkctl
 from sparkctl.compute_interface_factory import make_compute_interface
 import shutil
 from sparkctl.hive import setup_postgres_metastore, write_postgres_hive_site_file
-from sparkctl.models import SparkConfig
+from sparkctl.models import SparkConfig, StatusTracker
 from sparkctl.run_command import check_run_command, run_command
 from sparkctl.spark_process_runner import SparkProcessRunner
 from sparkctl.system_utils import make_spark_url
-
-
-@dataclass
-class _ProcessTracker:
-    started_master: bool = False
-    started_worker: bool = False
-    started_workers: bool = False
-    started_connect_server: bool = False
-    started_history_server: bool = False
-    started_thrift_server: bool = False
-    started_postgres: bool = False
 
 
 class ClusterManager:
     """Manages operation of the Spark cluster."""
 
     CONFIG_FILENAME = "config.json"
+    STATUS_FILENAME = "status.json"
 
-    def __init__(self, config: SparkConfig) -> None:
+    def __init__(self, config: SparkConfig, status: StatusTracker | None = None) -> None:
         self._config = config
+        self._status = status
         self._intf = make_compute_interface(config)
         self._intf.run_checks()
 
@@ -47,7 +37,13 @@ class ClusterManager:
             msg = f"{directory} is not a valid cluster manager directory because {config_file} does not exist"
             raise ValueError(msg)
 
-        return cls(SparkConfig.model_validate_json(config_file.read_text(encoding="utf-8")))
+        config = SparkConfig.model_validate_json(config_file.read_text(encoding="utf-8"))
+        status_file = directory / cls.STATUS_FILENAME
+        if status_file.exists():
+            status = StatusTracker.model_validate_json(status_file.read_text(encoding="utf-8"))
+        else:
+            status = None
+        return cls(config, status=status)
 
     def clean(self) -> None:
         """Delete all Spark runtime files in the directory."""
@@ -88,7 +84,7 @@ class ClusterManager:
         url = make_spark_url(gethostname())
         runner = SparkProcessRunner(self._config, url)
 
-        tracker = _ProcessTracker()
+        tracker = StatusTracker()
         try:
             self._start(runner, tracker)
         except Exception:
@@ -101,17 +97,22 @@ class ClusterManager:
                 runner.stop_history_server()
             if tracker.started_thrift_server:
                 runner.stop_thrift_server()
-            if tracker.started_worker:
-                runner.stop_worker_process()
             if tracker.started_workers:
-                runner.stop_worker_processes(self._read_workers())
+                workers = self._read_workers()
+                if len(workers) == 1:
+                    runner.stop_worker_process()
+                else:
+                    runner.stop_worker_processes(workers)
             if tracker.started_postgres:
                 self._stop_postgres()
             raise
 
         _print_conf_dir_msg(self._config.directories.get_spark_conf_dir())
+        status_file = self._config.directories.base / self.STATUS_FILENAME
+        with open(status_file, "w", encoding="utf-8") as f_out:
+            f_out.write(tracker.model_dump_json(indent=2))
 
-    def _start(self, runner: SparkProcessRunner, tracker: _ProcessTracker) -> None:
+    def _start(self, runner: SparkProcessRunner, tracker: StatusTracker) -> None:
         workers = self._read_workers()
         is_single_node_cluster = self._is_single_node_cluster(workers)
         if self._config.runtime.enable_postgres_hive_metastore:
@@ -140,7 +141,7 @@ class ClusterManager:
         worker_memory_gb = self._get_worker_memory_gb(self._get_runtime_spark_driver_memory_gb())
         if is_single_node_cluster:
             runner.start_worker_process(worker_memory_gb)
-            tracker.started_worker = True
+            tracker.started_workers = True
         else:
             runner.start_worker_processes(workers, worker_memory_gb)
             tracker.started_workers = True
@@ -148,21 +149,43 @@ class ClusterManager:
 
     def stop(self) -> None:
         """Stop all Spark processes."""
+        status_file = self._config.directories.base / self.STATUS_FILENAME
+        if status_file.exists():
+            tracker = StatusTracker.model_validate_json(status_file.read_text(encoding="utf-8"))
+        else:
+            logger.warning(
+                "Status file {} does not exist, assume all processes are running.", status_file
+            )
+            tracker = StatusTracker(
+                started_master=True,
+                started_workers=True,
+                started_thrift_server=True,
+                started_history_server=True,
+                started_connect_server=True,
+            )
+            if self._config.runtime.enable_postgres_hive_metastore:
+                tracker.started_postgres = True
         url = make_spark_url(gethostname())
         runner = SparkProcessRunner(self._config, url)
-        runner.stop_master_process()
-        runner.stop_connect_server()
-        runner.stop_history_server()
-        runner.stop_thrift_server()
-        workers = self._intf.get_worker_node_names()
-        is_single_node_cluster = self._is_single_node_cluster(workers)
-        if is_single_node_cluster:
-            runner.stop_worker_process()
-        else:
-            workers = self._read_workers()
-            runner.stop_worker_processes(workers)
-        if self._config.runtime.enable_postgres_hive_metastore:
+        if tracker.started_master:
+            runner.stop_master_process()
+        if tracker.started_connect_server:
+            runner.stop_connect_server()
+        if tracker.started_history_server:
+            runner.stop_history_server()
+        if tracker.started_thrift_server:
+            runner.stop_thrift_server()
+        if tracker.started_workers:
+            workers = self._intf.get_worker_node_names()
+            is_single_node_cluster = self._is_single_node_cluster(workers)
+            if is_single_node_cluster:
+                runner.stop_worker_process()
+            else:
+                workers = self._read_workers()
+                runner.stop_worker_processes(workers)
+        if tracker.started_postgres:
             self._stop_postgres()
+        status_file.write_text(StatusTracker().model_dump_json(indent=2), encoding="utf-8")
 
     def _get_spark_defaults_template(self) -> Path:
         return Path(next(iter(sparkctl.__path__))) / "conf" / "spark-defaults.conf.template"

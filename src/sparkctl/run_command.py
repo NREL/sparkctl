@@ -12,7 +12,7 @@ from loguru import logger
 
 
 def run_command(
-    cmd: str,
+    cmd: str | Path,
     output: dict[str, Any] | None = None,
     cwd: str | None = None,
     num_retries: int = 0,

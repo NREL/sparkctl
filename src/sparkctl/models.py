@@ -33,6 +33,15 @@ class BinaryLocations(SparkctlBaseModel):
         default=None, description="Path to the PostgreSQL jar file."
     )
 
+    @field_validator(
+        "spark_path", "java_path", "hadoop_path", "hive_tarball", "postgresql_jar_file"
+    )
+    @classmethod
+    def make_absolute(cls, val: Path | None) -> Path | None:
+        if val is not None and not val.is_absolute():
+            return val.absolute()
+        return val
+
 
 class SparkRuntimeParams(SparkctlBaseModel):
     """Controls Spark runtime parameters."""
@@ -116,6 +125,13 @@ class RuntimeDirectories(SparkctlBaseModel):
         default=Path(), description="Set a custom directory for the metastore and warehouse."
     )
 
+    @field_validator("base", "spark_scratch", "metastore_dir")
+    @classmethod
+    def make_absolute(cls, val: Path | None) -> Path | None:
+        if val is not None and not val.is_absolute():
+            return val.absolute()
+        return val
+
     def get_events_dir(self) -> Path:
         """Return the file path to hive-site.xml"""
         return self.get_spark_conf_dir() / "events"
@@ -178,6 +194,32 @@ class PostgresScripts(SparkctlBaseModel):
         return Path(__file__).parent / path
 
 
+class ResourceMonitorConfig(SparkctlBaseModel):
+    """Defines the resource stats to monitor."""
+
+    cpu: bool = Field(
+        description="Monitor CPU utilization",
+        default=True,
+    )
+    disk: bool = Field(
+        description="Monitor disk/storage utilization",
+        default=True,
+    )
+    memory: bool = Field(
+        description="Monitor memory utilization",
+        default=True,
+    )
+    network: bool = Field(
+        description="Monitor network utilization",
+        default=True,
+    )
+    interval: int = Field(default=5, description="Interval in seconds on which to collect stats")
+    enabled: bool = Field(
+        default=False,
+        description="Enable resource monitoring.",
+    )
+
+
 class ComputeParams(SparkctlBaseModel):
     environment: ComputeEnvironment = ComputeEnvironment.SLURM
     postgres: PostgresScripts = PostgresScripts()
@@ -190,3 +232,15 @@ class SparkConfig(SparkctlBaseModel):
     runtime: SparkRuntimeParams = SparkRuntimeParams()
     directories: RuntimeDirectories = RuntimeDirectories()
     compute: ComputeParams = ComputeParams()
+    resource_monitor: ResourceMonitorConfig = ResourceMonitorConfig()
+
+
+class StatusTracker(SparkctlBaseModel):
+    """Tracks running processes"""
+
+    started_master: bool = False
+    started_workers: bool = False
+    started_connect_server: bool = False
+    started_history_server: bool = False
+    started_thrift_server: bool = False
+    started_postgres: bool = False

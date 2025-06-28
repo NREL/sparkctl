@@ -1,6 +1,9 @@
 import os
+import shutil
+import stat
 import subprocess
 from loguru import logger
+from pathlib import Path
 from typing import Any
 
 from sparkctl.models import SparkConfig
@@ -50,54 +53,46 @@ class SparkProcessRunner:
         """Stop the Apache Thrift server."""
         return self._run_command(self._stop_thrift_server_cmd())
 
-    def start_worker_process(self, memory_gb: int | None = None) -> None:
+    def start_worker_process(self, memory_gb: int) -> None:
         """Start one Spark worker process."""
-        self._start_workers(self._start_worker_cmd(), memory_gb)
+        tmp_script = self._make_start_worker_script(self._start_worker_cmd(), memory_gb)
+        try:
+            self._check_run_command(tmp_script)
+        finally:
+            tmp_script.unlink()
 
-    def stop_worker_process(self) -> int:
-        """Stop the Spark workers."""
-        return self._run_command(self._stop_worker_cmd())
-
-    def start_worker_processes(self, workers: list[str], memory_gb: float | None = None) -> None:
+    def start_worker_processes(self, workers: list[str], memory_gb: int) -> None:
         """Start the Spark worker processes."""
         # Calling Spark's start-workers.sh doesn't work because there is no way to forward
-        # SPARK_CONF_DIR through ssh in their scripts.
+        # SPARK_CONF_DIR and JAVA_HOME through ssh in their scripts.
         start_script = self._sbin_cmd("start-worker.sh")
-        content = f"""#!/bin/bash
-export SPARK_CONF_DIR={self._conf_dir}
-export JAVA_HOME={self._java_path}
-{start_script} {self._url} -m {memory_gb}g
-"""
-        tmp_script = self._conf_dir / "tmp_start_worker.sh"
-        tmp_script.write_text(content, encoding="utf-8")
+        tmp_script = self._make_start_worker_script(start_script, memory_gb)
         try:
             for worker in workers:
-                cmd = f"ssh {worker} bash {tmp_script}"
+                cmd = f"ssh {worker} {tmp_script}"
                 subprocess.run(cmd, check=True, shell=True)
         finally:
             tmp_script.unlink()
 
+    def stop_worker_process(self) -> int:
+        """Stop the Spark workers."""
+        tmp_script = self._make_stop_worker_script(self._config.resource_monitor.enabled)
+        return self._run_command(f"bash {tmp_script}")
+
     def stop_worker_processes(self, workers: list[str]) -> int:
         """Stop the Spark workers."""
-        stop_script = self._stop_worker_cmd()
-        content = f"""#!/bin/bash
-export SPARK_CONF_DIR={self._conf_dir}
-export JAVA_HOME={self._java_path}
-{stop_script}
-"""
-        tmp_script = self._conf_dir / "tmp_stop_worker.sh"
-        tmp_script.write_text(content, encoding="utf-8")
+        tmp_script = self._make_stop_worker_script(self._config.resource_monitor.enabled)
         ret = 0
         for worker in workers:
             cmd = f"ssh {worker} bash {tmp_script}"
-            pipe = subprocess.run(cmd, shell=True)
-            if pipe.returncode != 0:
-                logger.error("Failed to stop worker on {}: {}", worker, pipe.returncode)
-                ret = pipe.returncode
+            ret_ = run_command(cmd)
+            if ret_ != 0:
+                logger.error("Failed to stop worker on {}: {}", worker, ret_)
+                ret = ret_
         tmp_script.unlink()
         return ret
 
-    def _start_workers(self, script: str, memory_gb: float | None) -> None:
+    def _start_workers(self, script: str, memory_gb: int | None) -> None:
         cmd = f"{script} {self._url}"
         if memory_gb is not None:
             cmd += f" -m {memory_gb}G"
@@ -142,10 +137,10 @@ export JAVA_HOME={self._java_path}
     def _sbin_cmd(self, name: str) -> str:
         return str(self._spark_path / "sbin" / name)
 
-    def _check_run_command(self, cmd: str) -> None:
+    def _check_run_command(self, cmd: str | Path) -> None:
         check_run_command(cmd, env=self._get_env())
 
-    def _run_command(self, cmd: str) -> int:
+    def _run_command(self, cmd: str | Path) -> int:
         return run_command(cmd, env=self._get_env())
 
     def _get_env(self) -> dict[str, Any]:
@@ -153,3 +148,58 @@ export JAVA_HOME={self._java_path}
         env["SPARK_CONF_DIR"] = str(self._conf_dir)
         env["JAVA_HOME"] = str(self._java_path)
         return env
+
+    def _make_start_worker_script(
+        self,
+        start_script: str,
+        memory_gb: int,
+    ) -> Path:
+        conf_dir = self._config.directories.get_spark_conf_dir()
+        content = f"""#!/bin/bash
+export SPARK_CONF_DIR={conf_dir}
+export JAVA_HOME={self._java_path}
+{start_script} {self._url} -m {memory_gb}g
+"""
+        if self._config.resource_monitor.enabled:
+            content += self._get_rmon_commands()
+        tmp_script = self._conf_dir / "tmp_start_worker.sh"
+        tmp_script.write_text(content, encoding="utf-8")
+        os.chmod(tmp_script, os.stat(tmp_script).st_mode | stat.S_IXUSR)
+        return tmp_script
+
+    def _get_rmon_commands(self) -> str:
+        rmon = self._config.resource_monitor
+        options = []
+        for field in ("cpu", "disk", "memory", "network"):
+            if getattr(rmon, field):
+                options.append(f"--{field}")
+            else:
+                options.append(f"--no-{field}")
+        rmon_exec = shutil.which("rmon")
+        opts = " ".join(options)
+        return f"""
+{rmon_exec} collect {opts} --interval {rmon.interval} --output {self._config.directories.base} --overwrite --plots &
+echo $! > {self._config.directories.base}/rmon_$(hostname).pid
+"""
+
+    def _make_stop_worker_script(self, kill_rmon: bool) -> Path:
+        content = f"""#!/bin/bash
+export SPARK_CONF_DIR={self._conf_dir}
+export JAVA_HOME={self._java_path}
+{self._stop_worker_cmd()}
+"""
+        if kill_rmon:
+            content += f"""
+rmon_pid_file={self._config.directories.base}/rmon_$(hostname).pid
+if [ -f $rmon_pid_file ]; then
+    pid=$(cat $rmon_pid_file)
+    if kill -0 "$pid" 2>/dev/null; then
+        kill -TERM $pid
+    fi
+    rm $rmon_pid_file
+fi
+"""
+        tmp_script = self._conf_dir / "tmp_stop_worker.sh"
+        tmp_script.write_text(content, encoding="utf-8")
+        os.chmod(tmp_script, os.stat(tmp_script).st_mode | stat.S_IXUSR)
+        return tmp_script

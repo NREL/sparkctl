@@ -29,11 +29,13 @@ dependencies = [
     "psutil",
     "pydantic >= 2.7, < 3",
     "rich_click",
+    "rmon",
     "toml",
 ]
 
 [project.optional-dependencies]
 dev = [
+    "furo",
     "mypy >=1.13, < 2",
     "myst_parser",
     "pre-commit",
@@ -41,6 +43,10 @@ dev = [
     "pytest",
     "pytest-cov",
     "requests",
+    "sphinx",
+    "sphinx-click",
+    "sphinx-copybutton",
+    "sphinx-tabs~=3.4",
     "types-requests",
     "types-toml",
 ]

@@ -1,4 +1,5 @@
 import sys
+import time
 from pathlib import Path
 
 import rich_click as click
@@ -29,12 +30,15 @@ def cli():
 
 _default_config_epilog = """
 Examples:\n
-$ sparkctl default-config ~/apache-spark/spark-4.0.0-bin-hadoop3 ~/jdk-21.0.2\n
-$ sparkctl default-config ~/apache-spark/spark-4.0.0-bin-hadoop3 ~/jdk-21.0.2 -e local\n
+$ sparkctl default-config \\n
+    /datasets/images/apache-spark/spark-4.0.0-bin-hadoop3 \\n
+    /datasets/images/apache-spark/jdk-21.0.7 \\n
+    -e slurm\n
+$ sparkctl default-config ~/apache-spark/spark-4.0.0-bin-hadoop3 ~/jdk-21.0.8 -e local\n
 """
 
 
-@click.command(name="default-config", epilog=_default_config_epilog)
+@click.command(epilog=_default_config_epilog)
 @click.argument("spark_path", type=click.Path(exists=True), callback=lambda *x: Path(x[2]))
 @click.argument("java_path", type=click.Path(exists=True), callback=lambda *x: Path(x[2]))
 @click.option(
@@ -71,7 +75,7 @@ $ sparkctl default-config ~/apache-spark/spark-4.0.0-bin-hadoop3 ~/jdk-21.0.2 -e
     help="Path to PostgreSQL jar file.",
     callback=lambda *x: None if x[2] is None else Path(x[2]),
 )
-def create_default_config(
+def default_config(
     spark_path: Path,
     java_path: Path,
     directory: Path,
@@ -80,7 +84,7 @@ def create_default_config(
     hive_tarball: Path | None,
     postgresql_jar_file: Path | None,
 ):
-    """Create a sparkctl config file.
+    """Create a sparkctl config file that defines paths to Spark binaries.
     This is a one-time requirement when installing sparkctl in a new environment."""
     config = _create_default_config(spark_path, java_path, directory, compute_environment)
     if hadoop_path is not None:
@@ -108,154 +112,155 @@ def _create_default_config(
     )
 
 
-CONFIGURE_OPTIONS = (
-    click.option(
-        "-d",
-        "--directory",
-        default=Path(),
-        show_default=True,
-        help="Base directory for the cluster configuration",
-        type=click.Path(),
-        callback=lambda *x: Path(x[2]),
-    ),
-    click.option(
-        "-s",
-        "--spark-scratch",
-        default=Path("spark_scratch"),
-        show_default=True,
-        help=RuntimeDirectories.model_fields["spark_scratch"].description,
-        callback=lambda *x: Path(x[2]),
-    ),
-    click.option(
-        "-e",
-        "--executor-cores",
-        default=sparkctl_settings.runtime.get("executor_cores"),
-        show_default=True,
-        help=SparkRuntimeParams.model_fields["executor_cores"].description,
-    ),
-    click.option(
-        "-M",
-        "--driver-memory-gb",
-        default=sparkctl_settings.runtime.get("driver_memory_gb"),
-        show_default=True,
-        type=int,
-        help=SparkRuntimeParams.model_fields["driver_memory_gb"].description,
-    ),
-    click.option(
-        "-o",
-        "--node-memory-overhead-gb",
-        default=sparkctl_settings.runtime.get("node_memory_overhead_gb"),
-        show_default=True,
-        type=int,
-        help=SparkRuntimeParams.model_fields["node_memory_overhead_gb"].description,
-    ),
-    click.option(
-        "-D",
-        "--dynamic-allocation",
-        is_flag=True,
-        default=sparkctl_settings.runtime.get("enable_dynamic_allocation"),
-        show_default=True,
-        help=SparkRuntimeParams.model_fields["enable_dynamic_allocation"].description,
-    ),
-    click.option(
-        "-m",
-        "--shuffle-partition-multiplier",
-        default=sparkctl_settings.runtime.get("shuffle_partition_multiplier"),
-        show_default=True,
-        help=SparkRuntimeParams.model_fields["shuffle_partition_multiplier"].description,
-    ),
-    click.option(
-        "-L",
-        "--local-storage",
-        is_flag=True,
-        default=sparkctl_settings.runtime.get("use_local_storage"),
-        show_default=True,
-        help=SparkRuntimeParams.model_fields["use_local_storage"].description,
-    ),
-    click.option(
-        "-c",
-        "--connect-server",
-        is_flag=True,
-        default=sparkctl_settings.runtime.get("start_connect_server"),
-        show_default=True,
-        help=SparkRuntimeParams.model_fields["start_connect_server"].description,
-    ),
-    click.option(
-        "-H",
-        "--history-server",
-        is_flag=True,
-        default=sparkctl_settings.runtime.get("start_history_server"),
-        show_default=True,
-        help=SparkRuntimeParams.model_fields["start_history_server"].description,
-    ),
-    click.option(
-        "-t",
-        "--thrift-server",
-        is_flag=True,
-        default=sparkctl_settings.runtime.get("start_thrift_server"),
-        show_default=True,
-        help=SparkRuntimeParams.model_fields["start_thrift_server"].description,
-    ),
-    click.option(
-        "-h",
-        "--hive-metastore",
-        is_flag=True,
-        default=sparkctl_settings.runtime.get("enable_hive_metastore"),
-        show_default=True,
-        help=SparkRuntimeParams.model_fields["enable_hive_metastore"].description,
-    ),
-    click.option(
-        "-p",
-        "--postgres-hive-metastore",
-        is_flag=True,
-        default=sparkctl_settings.runtime.get("enable_postgres_hive_metastore"),
-        show_default=True,
-        help=SparkRuntimeParams.model_fields["enable_postgres_hive_metastore"].description,
-    ),
-    click.option(
-        "-w",
-        "--metastore-dir",
-        default=Path(),
-        show_default=True,
-        help=RuntimeDirectories.model_fields["metastore_dir"].description,
-        callback=lambda *x: Path(x[2]),
-    ),
-    click.option(
-        "-P",
-        "--python-path",
-        help=SparkRuntimeParams.model_fields["python_path"].description,
-    ),
-    click.option(
-        "--use-current-python/--no-use-current-python",
-        is_flag=True,
-        default=True,
-        show_default=True,
-        help="Use the Python executable in the current environment for Spark workers. "
-        "--python-path takes precedence.",
-    ),
-)
-
-
-def add_options(options):
-    def _add_options(func):
-        for option in reversed(options):
-            func = option(func)
-        return func
-
-    return _add_options
-
-
 _configure_epilog = """
 Examples:\n
-$ sparkctl configure --shuffle-partition-multiplier 4\n
-$ sparkctl configure --local-storage\n
+$ sparkctl configure --start\n
+$ sparkctl configure --shuffle-partition-multiplier 4 --local-storage\n
 $ sparkctl configure --local-storage --thrift-server\n
 """
 
 
 @click.command(epilog=_configure_epilog)
-@add_options(CONFIGURE_OPTIONS)
+@click.option(
+    "--start/--no-start",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Start the cluster after configuration.",
+)
+@click.option(
+    "-d",
+    "--directory",
+    default=Path(),
+    show_default=True,
+    help="Base directory for the cluster configuration",
+    type=click.Path(),
+    callback=lambda *x: Path(x[2]),
+)
+@click.option(
+    "-s",
+    "--spark-scratch",
+    default=Path("spark_scratch"),
+    show_default=True,
+    help=RuntimeDirectories.model_fields["spark_scratch"].description,
+    callback=lambda *x: Path(x[2]),
+)
+@click.option(
+    "-e",
+    "--executor-cores",
+    default=sparkctl_settings.runtime.get("executor_cores"),
+    show_default=True,
+    help=SparkRuntimeParams.model_fields["executor_cores"].description,
+)
+@click.option(
+    "-M",
+    "--driver-memory-gb",
+    default=sparkctl_settings.runtime.get("driver_memory_gb"),
+    show_default=True,
+    type=int,
+    help=SparkRuntimeParams.model_fields["driver_memory_gb"].description,
+)
+@click.option(
+    "-o",
+    "--node-memory-overhead-gb",
+    default=sparkctl_settings.runtime.get("node_memory_overhead_gb"),
+    show_default=True,
+    type=int,
+    help=SparkRuntimeParams.model_fields["node_memory_overhead_gb"].description,
+)
+@click.option(
+    "-D",
+    "--dynamic-allocation",
+    is_flag=True,
+    default=sparkctl_settings.runtime.get("enable_dynamic_allocation"),
+    show_default=True,
+    help=SparkRuntimeParams.model_fields["enable_dynamic_allocation"].description,
+)
+@click.option(
+    "-m",
+    "--shuffle-partition-multiplier",
+    default=sparkctl_settings.runtime.get("shuffle_partition_multiplier"),
+    show_default=True,
+    help=SparkRuntimeParams.model_fields["shuffle_partition_multiplier"].description,
+)
+@click.option(
+    "-L",
+    "--local-storage",
+    is_flag=True,
+    default=sparkctl_settings.runtime.get("use_local_storage"),
+    show_default=True,
+    help=SparkRuntimeParams.model_fields["use_local_storage"].description,
+)
+@click.option(
+    "-c",
+    "--connect-server",
+    is_flag=True,
+    default=sparkctl_settings.runtime.get("start_connect_server"),
+    show_default=True,
+    help=SparkRuntimeParams.model_fields["start_connect_server"].description,
+)
+@click.option(
+    "-H",
+    "--history-server",
+    is_flag=True,
+    default=sparkctl_settings.runtime.get("start_history_server"),
+    show_default=True,
+    help=SparkRuntimeParams.model_fields["start_history_server"].description,
+)
+@click.option(
+    "-t",
+    "--thrift-server",
+    is_flag=True,
+    default=sparkctl_settings.runtime.get("start_thrift_server"),
+    show_default=True,
+    help=SparkRuntimeParams.model_fields["start_thrift_server"].description,
+)
+@click.option(
+    "-h",
+    "--hive-metastore",
+    is_flag=True,
+    default=sparkctl_settings.runtime.get("enable_hive_metastore"),
+    show_default=True,
+    help=SparkRuntimeParams.model_fields["enable_hive_metastore"].description,
+)
+@click.option(
+    "-p",
+    "--postgres-hive-metastore",
+    is_flag=True,
+    default=sparkctl_settings.runtime.get("enable_postgres_hive_metastore"),
+    show_default=True,
+    help=SparkRuntimeParams.model_fields["enable_postgres_hive_metastore"].description,
+)
+@click.option(
+    "-w",
+    "--metastore-dir",
+    default=Path(),
+    show_default=True,
+    help=RuntimeDirectories.model_fields["metastore_dir"].description,
+    callback=lambda *x: Path(x[2]),
+)
+@click.option(
+    "-P",
+    "--python-path",
+    help=SparkRuntimeParams.model_fields["python_path"].description,
+)
+@click.option(
+    "--resource-monitor/--no-resource-monitor",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="Enable resource monitoring.",
+)
+@click.option(
+    "--use-current-python/--no-use-current-python",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Use the Python executable in the current environment for Spark workers. "
+    "--python-path takes precedence.",
+)
 def configure(
+    start: bool,
     directory: Path,
     spark_scratch: Path,
     executor_cores: int,
@@ -271,99 +276,10 @@ def configure(
     postgres_hive_metastore: bool,
     metastore_dir: Path,
     python_path: str | None,
+    resource_monitor: bool,
     use_current_python: bool,
 ):
-    """Create a Spark cluster configuration. Use this command to create a Spark configuration
-    that can be manually modified before starting.
-    """
-    _configure_common(
-        directory=directory,
-        spark_scratch=spark_scratch,
-        executor_cores=executor_cores,
-        driver_memory_gb=driver_memory_gb,
-        node_memory_overhead_gb=node_memory_overhead_gb,
-        dynamic_allocation=dynamic_allocation,
-        shuffle_partition_multiplier=shuffle_partition_multiplier,
-        local_storage=local_storage,
-        connect_server=connect_server,
-        history_server=history_server,
-        thrift_server=thrift_server,
-        hive_metastore=hive_metastore,
-        postgres_hive_metastore=postgres_hive_metastore,
-        metastore_dir=metastore_dir,
-        python_path=python_path,
-        use_current_python=use_current_python,
-    )
-
-
-_configure_and_start_epilog = """
-Examples:\n
-$ sparkctl configure-and-start --shuffle-partition-multiplier 4\n
-$ sparkctl configure-and-start --local-storage\n
-$ sparkctl configure-and-start --local-storage --thrift-server\n
-"""
-
-
-@click.command(epilog=_configure_and_start_epilog)
-@add_options(CONFIGURE_OPTIONS)
-def configure_and_start(
-    directory: Path,
-    spark_scratch: Path,
-    executor_cores: int,
-    driver_memory_gb: int,
-    node_memory_overhead_gb: int,
-    dynamic_allocation: bool,
-    shuffle_partition_multiplier: int,
-    local_storage: bool,
-    connect_server: bool,
-    history_server: bool,
-    thrift_server: bool,
-    hive_metastore: bool,
-    postgres_hive_metastore: bool,
-    metastore_dir: Path,
-    python_path: str | None,
-    use_current_python: bool,
-):
-    """Create a Spark cluster configuration and start the cluster."""
-    mgr = _configure_common(
-        directory=directory,
-        spark_scratch=spark_scratch,
-        executor_cores=executor_cores,
-        driver_memory_gb=driver_memory_gb,
-        node_memory_overhead_gb=node_memory_overhead_gb,
-        dynamic_allocation=dynamic_allocation,
-        shuffle_partition_multiplier=shuffle_partition_multiplier,
-        local_storage=local_storage,
-        connect_server=connect_server,
-        history_server=history_server,
-        thrift_server=thrift_server,
-        hive_metastore=hive_metastore,
-        postgres_hive_metastore=postgres_hive_metastore,
-        metastore_dir=metastore_dir,
-        python_path=python_path,
-        use_current_python=use_current_python,
-    )
-    mgr.start()
-
-
-def _configure_common(
-    directory: Path,
-    spark_scratch: Path,
-    executor_cores: int,
-    driver_memory_gb: int,
-    node_memory_overhead_gb: int,
-    dynamic_allocation: bool,
-    shuffle_partition_multiplier: int,
-    local_storage: bool,
-    connect_server: bool,
-    history_server: bool,
-    thrift_server: bool,
-    hive_metastore: bool,
-    postgres_hive_metastore: bool,
-    metastore_dir: Path,
-    python_path: str | None,
-    use_current_python: bool,
-) -> ClusterManager:
+    """Create a Spark cluster configuration."""
     setup_logging(filename="sparkctl.log", mode="a")
     if python_path is None and use_current_python:
         logger.info("Use the current Python executable for Spark workers.")
@@ -397,8 +313,11 @@ def _configure_common(
         ),
         compute=sparkctl_settings.get("compute", {"environment": "slurm"}),
     )
+    config.resource_monitor.enabled = resource_monitor
     mgr = ClusterManager(config)
     mgr.configure()
+    if start:
+        mgr.start()
     return mgr
 
 
@@ -406,10 +325,19 @@ _start_epilog = """
 Examples:\n
 $ sparkctl start\n
 $ sparkctl start --directory ./my-spark-config\n
+$ sparkctl start --wait\n
 """
 
 
 @click.command(epilog=_start_epilog)
+@click.option(
+    "--wait/--no-wait",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="If True, wait until the user presses Ctrl-C or timeout is reached and then stop the "
+    "cluster. If False, start the cluster and exit.",
+)
 @click.option(
     "-d",
     "--directory",
@@ -419,12 +347,34 @@ $ sparkctl start --directory ./my-spark-config\n
     type=click.Path(),
     callback=lambda *x: Path(x[2]),
 )
-def start(directory: Path) -> None:
-    """Start a Spark cluster with an existing configuration. This is useful if you have manually
-    modified a Spark configuration created with `sparkctl configure`."""
+@click.option(
+    "-t",
+    "--timeout",
+    type=int,
+    help="If --wait is set, timeout in minutes. Defaults to no timeout.",
+)
+def start(wait: bool, directory: Path, timeout: int | None) -> None:
+    """Start a Spark cluster with an existing configuration."""
     setup_logging(filename="sparkctl.log", mode="a")
     mgr = ClusterManager.load(directory)
     mgr.start()
+    if wait:
+        if timeout is None:
+            msg = "Press Ctrl-C to shut down all Spark processes."
+            end = sys.maxsize
+        else:
+            msg = f"Wait until Ctrl-C is detected or {timeout} minutes"
+            end = int(time.time() * 60) + timeout
+        logger.info(msg)
+        interval = min((end, 3600))
+        try:
+            while time.time() < end:
+                time.sleep(interval)
+            logger.info("Timeout expired, shutting down the cluster.")
+        except KeyboardInterrupt:
+            logger.info("Detected Ctrl-c, shutting down the cluster.")
+        finally:
+            mgr.stop()
 
 
 _stop_epilog = """
@@ -458,9 +408,8 @@ def clean(directory: Path) -> None:
     mgr.clean()
 
 
-cli.add_command(create_default_config)
+cli.add_command(default_config)
 cli.add_command(configure)
-cli.add_command(configure_and_start)
 cli.add_command(start)
 cli.add_command(stop)
 # cli.add_command(clean)
