@@ -1,7 +1,7 @@
-# Run Python jobs on an Spark Cluster on an HPC
+# Run jobs on an Spark Cluster on an HPC
 
 In this tutorial you will learn how to start a Spark cluster on HPC compute nodes and then run
-Python jobs via the PySpark API.
+Spark jobs with `spark-submit`.
 
 1. Allocate compute nodes, such as with Slurm. This example acquires 4 CPUs and 30 GB of memory
    for the Spark master process and user application + Spark driver and 2 complete nodes for Spark

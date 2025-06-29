@@ -1,15 +1,18 @@
 import fileinput
+import os
 import re
+import shutil
 import sys
 from pathlib import Path
 from socket import gethostname
 from typing import Self
 
 from loguru import logger
+from pyspark.sql import SparkSession
 
 import sparkctl
+from sparkctl.config import make_default_spark_config
 from sparkctl.compute_interface_factory import make_compute_interface
-import shutil
 from sparkctl.hive import setup_postgres_metastore, write_postgres_hive_site_file
 from sparkctl.models import SparkConfig, StatusTracker
 from sparkctl.run_command import check_run_command, run_command
@@ -28,6 +31,28 @@ class ClusterManager:
         self._status = status
         self._intf = make_compute_interface(config)
         self._intf.run_checks()
+
+    @classmethod
+    def start_from_config_file(cls, config_file: Path | None = None) -> Self:
+        """Create a ClusterManager from a config file, configure the cluster, and start it.
+
+        Parameters
+        ----------
+        config_file
+            If set, load a SparkConfig from it. Otherwise, load the default SparkConfig.
+        """
+        # TODO: in this mode, we should ensure that we stop the cluster when the user exits
+        # Python (ipython/jupyter sessions).
+        # Could also make a context manager option for script environments.
+        config = (
+            make_default_spark_config()
+            if config_file is None
+            else SparkConfig.from_file(config_file)
+        )
+        mgr = cls(config)
+        mgr.configure()
+        mgr.start()
+        return mgr
 
     @classmethod
     def load(cls, directory: Path) -> Self:
@@ -79,6 +104,13 @@ class ClusterManager:
         with open(config_file, "w", encoding="utf-8") as f_out:
             f_out.write(self._config.model_dump_json(indent=2))
 
+    def get_spark_session(self) -> SparkSession:
+        """Return a SparkSession for the current cluster."""
+        if not self._config.runtime.start_connect_server:
+            msg = "The Spark config does not enable the Spark Connect Server."
+            raise ValueError(msg)
+        return SparkSession.builder.remote("sc://localhost:15002").getOrCreate()
+
     def start(self) -> None:
         """Start the Spark cluster."""
         url = make_spark_url(gethostname())
@@ -111,6 +143,9 @@ class ClusterManager:
         status_file = self._config.directories.base / self.STATUS_FILENAME
         with open(status_file, "w", encoding="utf-8") as f_out:
             f_out.write(tracker.model_dump_json(indent=2))
+
+        os.environ["SPARK_CONF_DIR"] = str(self._config.directories.get_spark_conf_dir())
+        os.environ["JAVA_HOME"] = str(self._config.binaries.java_path)
 
     def _start(self, runner: SparkProcessRunner, tracker: StatusTracker) -> None:
         workers = self._read_workers()

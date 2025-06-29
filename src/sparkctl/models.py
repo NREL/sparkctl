@@ -1,6 +1,7 @@
 import shutil
 from enum import StrEnum
 from pathlib import Path
+from typing import Self
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -18,6 +19,11 @@ class SparkctlBaseModel(BaseModel):
         arbitrary_types_allowed=True,
         populate_by_name=True,
     )
+
+    @classmethod
+    def from_file(cls, filename: Path) -> Self:
+        """Create the model from a file."""
+        return cls.model_validate_json(filename.read_text(encoding="utf-8"))
 
 
 class BinaryLocations(SparkctlBaseModel):
@@ -64,7 +70,7 @@ class SparkRuntimeParams(SparkctlBaseModel):
         description="Use compute node local storage for shuffle data.",
     )
     start_connect_server: bool = Field(
-        default=False,
+        default=True,
         description="Enable the Spark connect server.",
     )
     start_history_server: bool = Field(

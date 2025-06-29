@@ -2,8 +2,9 @@ from sparkctl.models import ComputeParams
 from pathlib import Path
 
 from dynaconf import Dynaconf, Validator  # type: ignore
+from rich import print
 
-from sparkctl.models import BinaryLocations, SparkRuntimeParams
+from sparkctl.models import BinaryLocations, SparkRuntimeParams, SparkConfig
 
 DEFAULT_SETTINGS_FILENAME = ".sparkctl.toml"
 BINARIES = {
@@ -45,6 +46,15 @@ sparkctl_settings = Dynaconf(
         Validator("COMPUTE", default=ComputeParams().model_dump(mode="json")),
     ],
 )
+
+
+def make_default_spark_config() -> SparkConfig:
+    """Return a SparkConfig created from the user's config file."""
+    return SparkConfig(
+        binaries=BinaryLocations(**sparkctl_settings.binaries),
+        runtime=SparkRuntimeParams(**sparkctl_settings.runtime),
+        compute=ComputeParams(**sparkctl_settings.compute),
+    )
 
 
 def print_settings() -> None:

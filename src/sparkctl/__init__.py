@@ -1,4 +1,5 @@
 from sparkctl.cluster_manager import ClusterManager
+from sparkctl.config import make_default_spark_config, sparkctl_settings
 from sparkctl.models import (
     BinaryLocations,
     ComputeEnvironment,
@@ -17,4 +18,6 @@ __all__ = (
     "RuntimeDirectories",
     "SparkConfig",
     "SparkRuntimeParams",
+    "make_default_spark_config",
+    "sparkctl_settings",
 )
