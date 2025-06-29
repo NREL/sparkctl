@@ -1,4 +1,5 @@
 import os
+import shlex
 import shutil
 import stat
 import subprocess
@@ -7,7 +8,6 @@ from pathlib import Path
 from typing import Any
 
 from sparkctl.models import SparkConfig
-from sparkctl.run_command import check_run_command, run_command
 
 
 class SparkProcessRunner:
@@ -57,7 +57,7 @@ class SparkProcessRunner:
         """Start one Spark worker process."""
         tmp_script = self._make_start_worker_script(self._start_worker_cmd(), memory_gb)
         try:
-            self._check_run_command(tmp_script)
+            self._check_run_command(str(tmp_script))
         finally:
             tmp_script.unlink()
 
@@ -77,7 +77,7 @@ class SparkProcessRunner:
     def stop_worker_process(self) -> int:
         """Stop the Spark workers."""
         tmp_script = self._make_stop_worker_script(self._config.resource_monitor.enabled)
-        return self._run_command(f"bash {tmp_script}")
+        return self._run_command(str(tmp_script))
 
     def stop_worker_processes(self, workers: list[str]) -> int:
         """Stop the Spark workers."""
@@ -85,10 +85,10 @@ class SparkProcessRunner:
         ret = 0
         for worker in workers:
             cmd = f"ssh {worker} bash {tmp_script}"
-            ret_ = run_command(cmd)
-            if ret_ != 0:
-                logger.error("Failed to stop worker on {}: {}", worker, ret_)
-                ret = ret_
+            proc = subprocess.run(shlex.split(cmd))
+            if proc.returncode != 0:
+                logger.error("Failed to stop worker on {}: {}", worker, proc.returncode)
+                ret = proc.returncode
         tmp_script.unlink()
         return ret
 
@@ -137,11 +137,11 @@ class SparkProcessRunner:
     def _sbin_cmd(self, name: str) -> str:
         return str(self._spark_path / "sbin" / name)
 
-    def _check_run_command(self, cmd: str | Path) -> None:
-        check_run_command(cmd, env=self._get_env())
+    def _check_run_command(self, cmd: str) -> None:
+        subprocess.run(shlex.split(cmd), env=self._get_env(), check=True)
 
-    def _run_command(self, cmd: str | Path) -> int:
-        return run_command(cmd, env=self._get_env())
+    def _run_command(self, cmd: str) -> int:
+        return subprocess.run(shlex.split(cmd), env=self._get_env()).returncode
 
     def _get_env(self) -> dict[str, Any]:
         env = {k: v for k, v in os.environ.items()}

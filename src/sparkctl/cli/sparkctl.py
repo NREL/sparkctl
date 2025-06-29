@@ -29,11 +29,12 @@ def cli():
 
 
 _default_config_epilog = """
+\b
 Examples:\n
-$ sparkctl default-config \\n
-    /datasets/images/apache-spark/spark-4.0.0-bin-hadoop3 \\n
-    /datasets/images/apache-spark/jdk-21.0.7 \\n
-    -e slurm\n
+$ sparkctl default-config \\ \n
+    /datasets/images/apache-spark/spark-4.0.0-bin-hadoop3 \\ \n
+    /datasets/images/apache-spark/jdk-21.0.7 \\ \n
+    -e slurm \\ \n
 $ sparkctl default-config ~/apache-spark/spark-4.0.0-bin-hadoop3 ~/jdk-21.0.8 -e local\n
 """
 
@@ -122,13 +123,6 @@ $ sparkctl configure --local-storage --thrift-server\n
 
 @click.command(epilog=_configure_epilog)
 @click.option(
-    "--start/--no-start",
-    is_flag=True,
-    show_default=True,
-    default=False,
-    help="Start the cluster after configuration.",
-)
-@click.option(
     "-d",
     "--directory",
     default=Path(),
@@ -169,8 +163,7 @@ $ sparkctl configure --local-storage --thrift-server\n
     help=SparkRuntimeParams.model_fields["node_memory_overhead_gb"].description,
 )
 @click.option(
-    "-D",
-    "--dynamic-allocation",
+    "--dynamic-allocation/--no-dynamic-allocation",
     is_flag=True,
     default=sparkctl_settings.runtime.get("enable_dynamic_allocation"),
     show_default=True,
@@ -184,48 +177,42 @@ $ sparkctl configure --local-storage --thrift-server\n
     help=SparkRuntimeParams.model_fields["shuffle_partition_multiplier"].description,
 )
 @click.option(
-    "-L",
-    "--local-storage",
+    "--local-storage/--no-local-storage",
     is_flag=True,
     default=sparkctl_settings.runtime.get("use_local_storage"),
     show_default=True,
     help=SparkRuntimeParams.model_fields["use_local_storage"].description,
 )
 @click.option(
-    "-c",
-    "--connect-server",
+    "--connect-server/--no-connect-server",
     is_flag=True,
     default=sparkctl_settings.runtime.get("start_connect_server"),
     show_default=True,
     help=SparkRuntimeParams.model_fields["start_connect_server"].description,
 )
 @click.option(
-    "-H",
-    "--history-server",
+    "--history-server/--no-history-server",
     is_flag=True,
     default=sparkctl_settings.runtime.get("start_history_server"),
     show_default=True,
     help=SparkRuntimeParams.model_fields["start_history_server"].description,
 )
 @click.option(
-    "-t",
-    "--thrift-server",
+    "--thrift-server/--no-thrift-server",
     is_flag=True,
     default=sparkctl_settings.runtime.get("start_thrift_server"),
     show_default=True,
     help=SparkRuntimeParams.model_fields["start_thrift_server"].description,
 )
 @click.option(
-    "-h",
-    "--hive-metastore",
+    "--hive-metastore/--no-hive-metastore",
     is_flag=True,
     default=sparkctl_settings.runtime.get("enable_hive_metastore"),
     show_default=True,
     help=SparkRuntimeParams.model_fields["enable_hive_metastore"].description,
 )
 @click.option(
-    "-p",
-    "--postgres-hive-metastore",
+    "--postgres-hive-metastore/--no-postgres-hive-metastore",
     is_flag=True,
     default=sparkctl_settings.runtime.get("enable_postgres_hive_metastore"),
     show_default=True,
@@ -250,6 +237,13 @@ $ sparkctl configure --local-storage --thrift-server\n
     default=False,
     show_default=True,
     help="Enable resource monitoring.",
+)
+@click.option(
+    "--start/--no-start",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Start the cluster after configuration.",
 )
 @click.option(
     "--use-current-python/--no-use-current-python",
@@ -350,10 +344,10 @@ $ sparkctl start --wait\n
 @click.option(
     "-t",
     "--timeout",
-    type=int,
+    type=float,
     help="If --wait is set, timeout in minutes. Defaults to no timeout.",
 )
-def start(wait: bool, directory: Path, timeout: int | None) -> None:
+def start(wait: bool, directory: Path, timeout: float | None) -> None:
     """Start a Spark cluster with an existing configuration."""
     setup_logging(filename="sparkctl.log", mode="a")
     mgr = ClusterManager.load(directory)
@@ -364,9 +358,9 @@ def start(wait: bool, directory: Path, timeout: int | None) -> None:
             end = sys.maxsize
         else:
             msg = f"Wait until Ctrl-C is detected or {timeout} minutes"
-            end = int(time.time() * 60) + timeout
+            end = int(time.time() + timeout * 60)
         logger.info(msg)
-        interval = min((end, 3600))
+        interval = min((end - time.time(), 3600))
         try:
             while time.time() < end:
                 time.sleep(interval)

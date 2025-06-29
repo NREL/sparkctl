@@ -1,7 +1,9 @@
 import fileinput
 import os
 import re
+import shlex
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 from socket import gethostname
@@ -15,7 +17,6 @@ from sparkctl.config import make_default_spark_config
 from sparkctl.compute_interface_factory import make_compute_interface
 from sparkctl.hive import setup_postgres_metastore, write_postgres_hive_site_file
 from sparkctl.models import SparkConfig, StatusTracker
-from sparkctl.run_command import check_run_command, run_command
 from sparkctl.spark_process_runner import SparkProcessRunner
 from sparkctl.system_utils import make_spark_url
 
@@ -410,12 +411,12 @@ spark.history.fs.logDirectory file://{events_dir}
         pg_data = self._config.directories.base / "pg_data"
         pg_run = self._config.directories.base / "pg_run"
         cmd = f"bash {script} {pg_data} {pg_run} {self._config.runtime.postgres_password}"
-        check_run_command(cmd)
+        subprocess.run(shlex.split(cmd), check=True)
         setup_postgres_metastore(self._config)
 
     def _stop_postgres(self) -> None:
         script = self._config.compute.postgres.get_script_path("stop_container")
-        ret = run_command(f"bash {script}")
+        ret = subprocess.run(["bash", str(script)])
         if ret != 0:
             logger.warning("Failed to stop the postgres container: {}", ret)
 

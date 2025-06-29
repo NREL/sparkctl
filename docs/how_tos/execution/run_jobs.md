@@ -11,18 +11,18 @@ $ export SPARK_CONF_DIR=$(pwd)/conf
 
 1. Start a Spark process.
 
-   If using pyspark:
-   ```console
-   $ pyspark --master spark://$(hostname):7077
-   ```
-   
-   If using pyspark-client (Spark Connect):
+   If using pyspark-client (via Spark Connect Server):
    ```console
    $ python
    >>> from pyspark.sql import SparkSession
    >>> spark = SparkSession.builder.remote("sc://localhost:15002").getOrCreate()
    ```
 
+   If using pyspark:
+   ```console
+   $ pyspark --master spark://$(hostname):7077
+   ```
+   
 2. Optional: check your environment to ensure that all configuration settings are correct.
 Most importantly, ensure that you connected to the Spark cluster master and are not in local mode.
 pyspark prints the connection information during startup. For example:
@@ -43,31 +43,25 @@ pyspark prints the connection information during startup. For example:
 ## Jupyter notebook
 The command below will allow you to connect to the Spark cluster in a Jupyter notebook.
 
-1. Set these environment variables.
+Start the notebook server
 
-   ```console
-   $ export PYSPARK_DRIVER_PYTHON=jupyter
-   ```
-   ```console
-   $ export PYSPARK_DRIVER_PYTHON_OPTS="notebook --no-browser --port=8889 --ip=0.0.0.0"
-   ```
+```console
+$ jupyter notebook --no-browser --port=8889 --ip=0.0.0.0
+```
 
-2. Start the notebook server
+The Jupyter process will print a URL to the terminal. You can access it from your laptop after
+you forward the ports through an ssh tunnel.
 
-   ```console
-   $ pyspark --master spark://$(hostname):7077
-   ```
-   
-   The Jupyter process will print a URL to the terminal. You can access it from your laptop after you forward the ports through an ssh tunnel.
-   
-   This is a Mac/Linux example. On Windows adjust the environment variable syntax as needed for the Command shell or PowerShell.
-
-   ```console
-   $ export COMPUTE_NODE=<your-compute-node-name>
-   $ ssh -L 4040:$COMPUTE_NODE:4040 -L 8080:$COMPUTE_NODE:8080 -L 8889:$COMPUTE_NODE:8889 $USER@kestrel.hpc.nrel.gov
-   ```
+```console
+$ ssh -L 8889:<your-compute-node-name>:8889 $USER@kestrel.hpc.nrel.gov
+```
 
 ## Script execution with spark-submit
+
+```{eval-rst}
+.. warning:: spark-submit is available if you install `pyspark` but not `pyspark-client`.
+```
+
 1. Set the environment variable `SPARK_CONF_DIR`, pointed at your configuration directory.
 
    ```console

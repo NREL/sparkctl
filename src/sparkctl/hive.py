@@ -1,10 +1,10 @@
 import os
 import shutil
+import subprocess
 import tarfile
 from pathlib import Path
 
 from sparkctl.models import SparkConfig
-from sparkctl.run_command import check_run_command
 
 
 def setup_postgres_metastore(config: SparkConfig) -> None:
@@ -12,8 +12,10 @@ def setup_postgres_metastore(config: SparkConfig) -> None:
     pg_data_dir = config.directories.base / "pg_data"
     pg_exists = bool(list(pg_data_dir.iterdir()))
     setup_script = config.compute.postgres.get_script_path("setup_metastore")
-    check_run_command(
-        f"bash {setup_script} {str(pg_exists).lower()} {config.runtime.postgres_password}"
+    assert config.runtime.postgres_password is not None
+    subprocess.run(
+        ["bash", str(setup_script), str(pg_exists).lower(), config.runtime.postgres_password],
+        check=True,
     )
     if not pg_exists:
         init_hive(config)
@@ -59,7 +61,9 @@ def init_hive(config: SparkConfig):
                 "HIVE_CONF": str(hive_conf),
             }
         )
-        check_run_command(f"{hive_home}/bin/schematool -dbType postgres -initSchema", env=env)
+        subprocess.run(
+            [f"{hive_home}/bin/schematool", "-dbType", "postgres", "-initSchema"], env=env
+        )
     finally:
         os.chdir(cwd)
 

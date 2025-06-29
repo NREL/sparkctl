@@ -39,18 +39,21 @@ POSTGRES_JAR_FILE = Path("tests") / "data" / POSTGRES_JAR_NAME
 
 TARBALLS: list[dict[str, Any]] = [
     {
+        "name": "spark",
         "dir_path": SPARK_DIR,
         "dir_gz": SPARK_DIR_GZ,
         "url": SPARK_URL,
         "extract": True,
     },
     {
+        "name": "hadoop",
         "dir_path": HADOOP_DIR,
         "dir_gz": HADOOP_DIR_GZ,
         "url": HADOOP_URL,
         "extract": True,
     },
     {
+        "name": "hive",
         "dir_path": HIVE_DIR,
         "dir_gz": HIVE_DIR_GZ,
         "url": HIVE_URL,
@@ -76,6 +79,7 @@ else:
 
 TARBALLS.append(
     {
+        "name": "java",
         "dir_path": JAVA_DIR,
         "dir_gz": JAVA_DIR_GZ,
         "url": JAVA_URL,
@@ -106,6 +110,11 @@ def pytest_sessionstart(session):
             download_file(POSTGRES_JAR_URL, POSTGRES_JAR_FILE)
         except Exception:
             subprocess.run(["wget", POSTGRES_JAR_URL, "-O", str(POSTGRES_JAR_FILE)], check=True)
+
+
+@pytest.fixture
+def spark_binaries() -> list[dict[str, Any]]:
+    return TARBALLS + [{"name": "postgres", "dir_path": POSTGRES_JAR_FILE}]
 
 
 def download_file(url: str, download_path: Path) -> None:

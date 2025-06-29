@@ -1,11 +1,11 @@
 import os
 import re
+import subprocess
 from pathlib import Path
 from socket import gethostname
 from typing import Any
 
 from sparkctl.compute_interface import ComputeInterface
-from sparkctl.run_command import check_run_command
 
 
 class SlurmCompute(ComputeInterface):
@@ -99,11 +99,15 @@ def get_node_names(job_id: str) -> list[str]:
     # The squeue command will produce multiple lines if the job is heterogeneous.
     job_id = os.environ["SLURM_JOB_ID"]
     output: dict[str, Any] = {}
-    check_run_command(f'squeue -j {job_id} --format="%5D %1000N" -h', output=output)
-    host_lists = [x.strip().split()[1] for x in output["stdout"].splitlines() if x]
+    proc = subprocess.run(
+        ["squeue", "-j", job_id, "--format", '"%5D %1000N"', "-h"], capture_output=True, check=True
+    )
+    host_lists = [x.strip().split()[1] for x in proc.stdout.decode("utf-8").splitlines() if x]
     final: list[str] = []
     for hosts in host_lists:
         output.clear()
-        check_run_command(f"scontrol show hostnames {hosts}", output=output)
-        final += output["stdout"].split()
+        proc = subprocess.run(
+            ["scontrol", "show", "hostnames", hosts], capture_output=True, check=True
+        )
+        final += proc.stdout.decode("utf-8").split()
     return final

@@ -2,8 +2,8 @@
 
 This package implements configuration and orchestration of Spark clusters with standalone cluster
 managers. This is useful in environments like HPCs where the infrastructure implemented by cloud
-providers, such as AWS, is not available. It is also helpful when the clusters are ephemeral, such
-as is the case with HPC resource allocations.
+providers, such as AWS, is not available. It is particularly helpful when users want to deploy
+Spark but do not have administrative control of the servers.
 
 ## Features
 - Controls startup and shutdown of Spark processes on compute nodes in a a Slurm compute node
