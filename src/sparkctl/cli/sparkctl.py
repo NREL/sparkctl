@@ -35,7 +35,7 @@ $ sparkctl default-config \\ \n
     /datasets/images/apache-spark/spark-4.0.0-bin-hadoop3 \\ \n
     /datasets/images/apache-spark/jdk-21.0.7 \\ \n
     -e slurm \\ \n
-$ sparkctl default-config ~/apache-spark/spark-4.0.0-bin-hadoop3 ~/jdk-21.0.8 -e local\n
+$ sparkctl default-config ~/apache-spark/spark-4.0.0-bin-hadoop3 ~/jdk-21.0.8 -e native\n
 """
 
 

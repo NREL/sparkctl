@@ -134,7 +134,7 @@ def extract_tarball(src_file: Path, extract_dir: Path) -> None:
 
 @pytest.fixture
 def setup_local_env(tmp_path):
-    config = _create_default_config(SPARK_DIR, JAVA_DIR, tmp_path, ComputeEnvironment.LOCAL)
+    config = _create_default_config(SPARK_DIR, JAVA_DIR, tmp_path, ComputeEnvironment.NATIVE)
     config.binaries.spark_path = SPARK_DIR
     match sys.platform:
         case "linux":

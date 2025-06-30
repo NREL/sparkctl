@@ -112,6 +112,20 @@ class ClusterManager:
             raise ValueError(msg)
         return SparkSession.builder.remote("sc://localhost:15002").getOrCreate()
 
+    def set_workers(self, workers: list[str]) -> None:
+        """Set the workers for the cluster.
+
+        Parameters
+        ----------
+        workers:
+            Worker node names, will be used as ssh targets.
+        """
+        self._write_workers(workers)
+
+    def get_workers(self) -> list[str]:
+        """Return the current worker node names."""
+        return self._read_workers()
+
     def start(self) -> None:
         """Start the Spark cluster."""
         url = make_spark_url(gethostname())
@@ -430,13 +444,15 @@ spark.history.fs.logDirectory file://{events_dir}
         logger.info("Wrote {} {} to {}", tag, num_workers, filename)
 
     def _read_workers(self) -> list[str]:
-        return [
-            x
-            for x in self._config.directories.get_workers_file()
-            .read_text(encoding="utf-8")
-            .splitlines()
-            if x
-        ]
+        workers_file = self._config.directories.get_workers_file()
+        if not workers_file.exists():
+            msg = (
+                f"The workers file does not exist at {workers_file}. Have you called "
+                "ClusterManager.configure()?"
+            )
+            raise ValueError(msg)
+
+        return [x for x in workers_file.read_text(encoding="utf-8").splitlines() if x]
 
 
 def _print_conf_dir_msg(conf_dir: Path) -> None:

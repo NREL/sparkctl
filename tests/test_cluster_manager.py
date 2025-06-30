@@ -1,3 +1,4 @@
+import socket
 import time
 from pathlib import Path
 
@@ -8,6 +9,17 @@ from sparkctl import (
     ClusterManager,
     SparkConfig,
 )
+
+
+def test_cluster_manager_workers(setup_local_env: tuple[SparkConfig, Path]):
+    config, _ = setup_local_env
+    mgr = ClusterManager(config)
+    mgr.configure()
+    workers = mgr.get_workers()
+    assert workers == [socket.gethostname()]
+    new_workers = ["worker1", "worker2"]
+    mgr.set_workers(new_workers)
+    assert mgr.get_workers() == new_workers
 
 
 def test_cluster_manager(setup_local_env: tuple[SparkConfig, Path]):

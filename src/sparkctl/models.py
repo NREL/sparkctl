@@ -178,7 +178,9 @@ class RuntimeDirectories(SparkctlBaseModel):
 class ComputeEnvironment(StrEnum):
     """Defines the supported compute environments."""
 
-    LOCAL = "local"
+    # The user must specify the workers to use.
+    NATIVE = "native"
+    # sparkctl detects workers through Slurm environment variables.
     SLURM = "slurm"
 
 

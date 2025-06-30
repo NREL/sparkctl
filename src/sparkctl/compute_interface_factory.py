@@ -1,6 +1,6 @@
 from sparkctl.compute_interface import ComputeInterface
 from sparkctl.models import ComputeEnvironment, SparkConfig
-from sparkctl.local_compute import LocalCompute
+from sparkctl.native_compute import NativeCompute
 from sparkctl.slurm_compute import SlurmCompute
 
 
@@ -9,8 +9,8 @@ def make_compute_interface(config: SparkConfig) -> ComputeInterface:
     match config.compute.environment:
         case ComputeEnvironment.SLURM:
             return SlurmCompute(config)
-        case ComputeEnvironment.LOCAL:
-            return LocalCompute(config)
+        case ComputeEnvironment.NATIVE:
+            return NativeCompute(config)
         case _:
             msg = f"{config.environment=} is not supported"
             raise NotImplementedError(msg)

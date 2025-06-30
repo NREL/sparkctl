@@ -8,7 +8,7 @@ import psutil
 from sparkctl.compute_interface import ComputeInterface
 
 
-class LocalCompute(ComputeInterface):
+class NativeCompute(ComputeInterface):
     """Provides interface to Slurm."""
 
     def get_node_memory_overhead_gb(

@@ -1,0 +1,3 @@
+# Put output of Slurm commands here when Kestrel is back
+# squeue -j job_id --format "%5D %1000N" -h
+# scontrol show hostnames
