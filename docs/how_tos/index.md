@@ -8,7 +8,6 @@
 
     getting_started/index
     configuration/index
-    hpc/index
     execution/index
     applications/index
 ```

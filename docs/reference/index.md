@@ -2,7 +2,12 @@
 # Reference
 
 ```{eval-rst}
-.. click:: sparkctl.cli.sparkctl:cli
-   :prog: sparkctl
-   :nested: full
+.. toctree::
+    :maxdepth: 4
+    :caption: Contents:
+    :hidden:
+
+    cluster_manager_api
+    hpc/index
+    cli_reference
 ```
