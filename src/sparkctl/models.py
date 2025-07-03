@@ -75,7 +75,7 @@ class SparkRuntimeParams(SparkctlBaseModel):
         description="Use compute node local storage for shuffle data.",
     )
     start_connect_server: bool = Field(
-        default=True,
+        default=False,
         description="Enable the Spark connect server.",
     )
     start_history_server: bool = Field(
