@@ -430,9 +430,9 @@ spark.history.fs.logDirectory file://{events_dir}
 
     def _stop_postgres(self) -> None:
         script = self._config.compute.postgres.get_script_path("stop_container")
-        ret = subprocess.run(["bash", str(script)])
-        if ret != 0:
-            logger.warning("Failed to stop the postgres container: {}", ret)
+        proc = subprocess.run(["bash", str(script)])
+        if proc.returncode != 0:
+            logger.warning("Failed to stop the postgres container: {}", proc.returncode)
 
     def _write_workers(self, workers: list[str]) -> None:
         filename = self._config.directories.get_workers_file()
