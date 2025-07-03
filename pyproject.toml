@@ -59,6 +59,12 @@ Source = "https://github.com/NREL/sparkctl"
 [project.scripts]
 sparkctl = "sparkctl.cli.sparkctl:cli"
 
+[tool.hatch.build]
+include = [
+  "src/sparkctl/conf/*",
+  "src/sparkctl/postgres/*.sh",
+]
+
 [tool.mypy]
 check_untyped_defs = true
 files = [
