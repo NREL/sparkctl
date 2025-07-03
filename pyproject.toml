@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "sparkctl"
@@ -59,11 +59,11 @@ Source = "https://github.com/NREL/sparkctl"
 [project.scripts]
 sparkctl = "sparkctl.cli.sparkctl:cli"
 
-[tool.hatch.build]
-include = [
-  "src/sparkctl/conf/*",
-  "src/sparkctl/postgres/*.sh",
-]
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*.sh", "*.conf", "*.properties", "*.template"]
 
 [tool.mypy]
 check_untyped_defs = true
