@@ -1,6 +1,7 @@
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 import rich_click as click
 import toml
@@ -12,6 +13,7 @@ from sparkctl.config import (
     sparkctl_settings,
 )
 from sparkctl.cluster_manager import ClusterManager
+from sparkctl.exceptions import SparkctlBaseException
 from sparkctl.loggers import setup_logging
 from sparkctl.models import (
     BinaryLocations,
@@ -24,7 +26,30 @@ from sparkctl.models import (
 
 
 @click.group("sparkctl")
-def cli():
+@click.option(
+    "-c",
+    "--console-level",
+    default=sparkctl_settings.app.console_level,
+    show_default=True,
+    help="Console log level",
+)
+@click.option(
+    "-f",
+    "--file-level",
+    default=sparkctl_settings.app.file_level,
+    show_default=True,
+    help="Console log level",
+)
+@click.option(
+    "-r",
+    "--reraise-exceptions",
+    is_flag=True,
+    default=sparkctl_settings.app.reraise_exceptions,
+    show_default=True,
+    help="Reraise unhandled sparkctl exceptions.",
+)
+@click.pass_context
+def cli(ctx: click.Context, console_level: str, file_level: str, reraise_exceptions: bool) -> None:
     """sparkctl comands"""
 
 
@@ -147,6 +172,14 @@ $ sparkctl configure --local-storage --thrift-server\n
     help=SparkRuntimeParams.model_fields["executor_cores"].description,
 )
 @click.option(
+    "-E",
+    "--executor-memory-gb",
+    default=sparkctl_settings.runtime.get("executor_memory_gb"),
+    show_default=True,
+    type=int,
+    help=SparkRuntimeParams.model_fields["executor_memory_gb"].description,
+)
+@click.option(
     "-M",
     "--driver-memory-gb",
     default=sparkctl_settings.runtime.get("driver_memory_gb"),
@@ -253,11 +286,14 @@ $ sparkctl configure --local-storage --thrift-server\n
     help="Use the Python executable in the current environment for Spark workers. "
     "--python-path takes precedence.",
 )
+@click.pass_context
 def configure(
+    ctx: click.Context,
     start: bool,
     directory: Path,
     spark_scratch: Path,
     executor_cores: int,
+    executor_memory_gb: int,
     driver_memory_gb: int,
     node_memory_overhead_gb: int,
     dynamic_allocation: bool,
@@ -274,7 +310,12 @@ def configure(
     use_current_python: bool,
 ):
     """Create a Spark cluster configuration."""
-    setup_logging(filename="sparkctl.log", mode="a")
+    setup_logging(
+        filename="sparkctl.log",
+        console_level=ctx.find_root().params["console_level"],
+        file_level=ctx.find_root().params["console_level"],
+        mode="a",
+    )
     if python_path is None and use_current_python:
         logger.info("Use the current Python executable for Spark workers.")
         python_path = sys.executable
@@ -288,6 +329,7 @@ def configure(
         ),
         runtime=SparkRuntimeParams(
             executor_cores=executor_cores,
+            executor_memory_gb=executor_memory_gb,
             driver_memory_gb=driver_memory_gb,
             node_memory_overhead_gb=node_memory_overhead_gb,
             enable_dynamic_allocation=dynamic_allocation,
@@ -308,6 +350,12 @@ def configure(
         compute=sparkctl_settings.get("compute", {"environment": "slurm"}),
     )
     config.resource_monitor.enabled = resource_monitor
+    res = handle_sparkctl_exception(ctx, _configure, config, start)
+    if res[1] != 0:
+        ctx.exit(res[1])
+
+
+def _configure(config: SparkConfig, start: bool) -> ClusterManager:
     mgr = ClusterManager(config)
     mgr.configure()
     if start:
@@ -347,9 +395,15 @@ $ sparkctl start --wait\n
     type=float,
     help="If --wait is set, timeout in minutes. Defaults to no timeout.",
 )
-def start(wait: bool, directory: Path, timeout: float | None) -> None:
+@click.pass_context
+def start(ctx: click.Context, wait: bool, directory: Path, timeout: float | None) -> None:
     """Start a Spark cluster with an existing configuration."""
-    setup_logging(filename="sparkctl.log", mode="a")
+    setup_logging(
+        filename="sparkctl.log",
+        console_level=ctx.find_root().params["console_level"],
+        file_level=ctx.find_root().params["console_level"],
+        mode="a",
+    )
     mgr = ClusterManager.load(directory)
     mgr.start()
     if wait:
@@ -400,6 +454,23 @@ def clean(directory: Path) -> None:
     """Delete all Spark runtime files in the directory."""
     mgr = ClusterManager.load(directory)
     mgr.clean()
+
+
+def handle_sparkctl_exception(ctx: click.Context, func, *args, **kwargs) -> Any:
+    """Handle any sparkctl exceptions as specified by the CLI parameters."""
+    res = None
+    try:
+        res = func(*args, **kwargs)
+        return res, 0
+    except SparkctlBaseException:
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        filename = exc_tb.tb_frame.f_code.co_filename  # type: ignore
+        line = exc_tb.tb_lineno  # type: ignore
+        msg = f'{func.__name__} failed: exception={exc_type.__name__} message="{exc_value}" {filename=} {line=}'  # type: ignore
+        logger.error(msg)
+        if ctx.find_root().params["reraise_exceptions"]:
+            raise
+        return res, 1
 
 
 cli.add_command(default_config)

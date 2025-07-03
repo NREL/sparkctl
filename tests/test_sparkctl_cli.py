@@ -81,3 +81,20 @@ def test_configure_start_stop(setup_local_env):
         cli, ["start", "--directory", str(tmp_path), "--wait", "--timeout", "0.01667"]
     )
     assert result.exit_code == 0
+
+
+def test_invalid_executor_memory(setup_local_env):
+    _, tmp_path = setup_local_env
+    cmd = [
+        "configure",
+        "--directory",
+        str(tmp_path),
+        "--executor-memory-gb",
+        "1000",
+    ]
+    filename = tmp_path / "config.json"
+    assert not filename.exists()
+    runner = CliRunner()
+    result = runner.invoke(cli, cmd)
+    assert result.exit_code == 1
+    assert "cannot be more than worker_memory_gb" in result.stderr

@@ -56,6 +56,11 @@ class SparkRuntimeParams(SparkctlBaseModel):
         default=5,
         description="Number of cores per executor",
     )
+    executor_memory_gb: int | None = Field(
+        default=None,
+        description="Memory per executor in GB. By default, auto-determine by using what is "
+        "available. This can also be set implicitly by increasing executor_cores.",
+    )
     driver_memory_gb: int = Field(
         default=10,
         description="Driver memory in GB. This is the maximum amount of data that can be pulled "
@@ -233,6 +238,22 @@ class ComputeParams(SparkctlBaseModel):
     postgres: PostgresScripts = PostgresScripts()
 
 
+class AppParams(SparkctlBaseModel):
+    console_level: str = Field(
+        default="INFO",
+        description="Console log level",
+    )
+    file_level: str = Field(
+        default="DEBUG",
+        description="File log level",
+    )
+    reraise_exceptions: bool = Field(
+        default=False,
+        description="Reraise sparkctl exceptions in the CLI handler. Not recommended for users. "
+        "Useful for developers when debugging issues.",
+    )
+
+
 class SparkConfig(SparkctlBaseModel):
     """Contains all Spark configuration parameters."""
 
@@ -241,6 +262,7 @@ class SparkConfig(SparkctlBaseModel):
     directories: RuntimeDirectories = RuntimeDirectories()
     compute: ComputeParams = ComputeParams()
     resource_monitor: ResourceMonitorConfig = ResourceMonitorConfig()
+    app: AppParams = AppParams()
 
 
 class StatusTracker(SparkctlBaseModel):

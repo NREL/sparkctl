@@ -15,6 +15,7 @@ from pyspark.sql import SparkSession
 import sparkctl
 from sparkctl.config import make_default_spark_config
 from sparkctl.compute_interface_factory import make_compute_interface
+from sparkctl.exceptions import InvalidConfiguration
 from sparkctl.hive import setup_postgres_metastore, write_postgres_hive_site_file
 from sparkctl.models import SparkConfig, StatusTracker
 from sparkctl.spark_process_runner import SparkProcessRunner
@@ -61,7 +62,7 @@ class ClusterManager:
         config_file = directory / cls.CONFIG_FILENAME
         if not config_file.exists():
             msg = f"{directory} is not a valid cluster manager directory because {config_file} does not exist"
-            raise ValueError(msg)
+            raise InvalidConfiguration(msg)
 
         config = SparkConfig.model_validate_json(config_file.read_text(encoding="utf-8"))
         status_file = directory / cls.STATUS_FILENAME
@@ -109,7 +110,7 @@ class ClusterManager:
         """Return a SparkSession for the current cluster."""
         if not self._config.runtime.start_connect_server:
             msg = "The Spark config does not enable the Spark Connect Server."
-            raise ValueError(msg)
+            raise InvalidConfiguration(msg)
         return SparkSession.builder.remote("sc://localhost:15002").getOrCreate()
 
     def set_workers(self, workers: list[str]) -> None:
@@ -318,7 +319,16 @@ spark.worker.cleanup.enabled = true
         worker_num_cpus -= 1
 
         min_executors_per_node = worker_num_cpus // self._config.runtime.executor_cores
-        executor_memory_gb = worker_memory_gb // min_executors_per_node
+        if self._config.runtime.executor_memory_gb is None:
+            executor_memory_gb = worker_memory_gb // min_executors_per_node
+        else:
+            executor_memory_gb = self._config.runtime.executor_memory_gb
+        if executor_memory_gb > worker_memory_gb:
+            msg = (
+                f"{executor_memory_gb=} cannot be more than {worker_memory_gb=}. "
+                "Please adjust the settings."
+            )
+            raise InvalidConfiguration(msg)
         executors_by_mem = worker_memory_gb // executor_memory_gb
         executors_by_cpu = worker_num_cpus // self._config.runtime.executor_cores
         if executors_by_cpu <= executors_by_mem:
@@ -358,7 +368,7 @@ spark.executor.memory {executor_memory_gb}g
         if rt_params.enable_postgres_hive_metastore:
             if rt_params.postgres_password is None:
                 msg = "posgres_password cannot be None"
-                raise ValueError(msg)
+                raise InvalidConfiguration(msg)
             write_postgres_hive_site_file(rt_params.postgres_password, hive_site_file)
         else:
             hive_template = Path(next(iter(sparkctl.__path__))) / "conf" / "hive-site.xml.template"
@@ -395,7 +405,7 @@ spark.history.fs.logDirectory file://{events_dir}
                 return int(match.group(1))
 
         msg = "Did not find Spark driver memory in spark-defaults.conf"
-        raise ValueError(msg)
+        raise InvalidConfiguration(msg)
 
     def _is_history_server_enabled(self) -> bool:
         """Return True if the history server is enabled."""
@@ -450,7 +460,7 @@ spark.history.fs.logDirectory file://{events_dir}
                 f"The workers file does not exist at {workers_file}. Have you called "
                 "ClusterManager.configure()?"
             )
-            raise ValueError(msg)
+            raise InvalidConfiguration(msg)
 
         return [x for x in workers_file.read_text(encoding="utf-8").splitlines() if x]
 

@@ -1,4 +1,4 @@
-from sparkctl.models import ComputeParams
+from sparkctl.models import AppParams, ComputeParams
 from pathlib import Path
 
 from dynaconf import Dynaconf, Validator  # type: ignore
@@ -16,6 +16,7 @@ BINARIES = {
 }
 RUNTIME = {
     "executor_cores": SparkRuntimeParams.model_fields["executor_cores"].default,
+    "executor_memory_gb": SparkRuntimeParams.model_fields["executor_memory_gb"].default,
     "driver_memory_gb": SparkRuntimeParams.model_fields["driver_memory_gb"].default,
     "node_memory_overhead_gb": SparkRuntimeParams.model_fields["node_memory_overhead_gb"].default,
     "use_local_storage": SparkRuntimeParams.model_fields["use_local_storage"].default,
@@ -34,6 +35,11 @@ RUNTIME = {
     ].default,
     "postgres_password": None,
 }
+APP = {
+    "console_level": AppParams.model_fields["console_level"].default,
+    "file_level": AppParams.model_fields["file_level"].default,
+    "reraise_exceptions": AppParams.model_fields["reraise_exceptions"].default,
+}
 
 sparkctl_settings = Dynaconf(
     envvar_prefix="SPARKCTL",
@@ -44,6 +50,7 @@ sparkctl_settings = Dynaconf(
         Validator("BINARIES", default=BinaryLocations(**BINARIES).model_dump(mode="json")),
         Validator("RUNTIME", default=SparkRuntimeParams(**RUNTIME).model_dump(mode="json")),
         Validator("COMPUTE", default=ComputeParams().model_dump(mode="json")),
+        Validator("APP", default=AppParams().model_dump(mode="json")),
     ],
 )
 
