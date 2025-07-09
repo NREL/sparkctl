@@ -272,6 +272,9 @@ class ClusterManager:
 # That in turn allows Pandas and DuckDB to properly interpret the timestamps.
 # Spark's default behavior is to use a commonly-used but non-standard INT96 format.
 spark.sql.parquet.outputTimestampType TIMESTAMP_MICROS
+
+# This sets the group write bit on all files, which does not happen by default.
+spark.hadoop.fs.permissions.umask-mode 002
 """
             )
             f_out.write(f"spark.driver.memory {rt_params.driver_memory_gb}g\n")
