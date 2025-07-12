@@ -21,9 +21,10 @@ class SparkctlBaseModel(BaseModel):
     )
 
     @classmethod
-    def from_file(cls, filename: Path) -> Self:
+    def from_file(cls, filename: Path | str) -> Self:
         """Create the model from a file."""
-        return cls.model_validate_json(filename.read_text(encoding="utf-8"))
+        path = filename if isinstance(filename, Path) else Path(filename)
+        return cls.model_validate_json(path.read_text(encoding="utf-8"))
 
 
 class BinaryLocations(SparkctlBaseModel):

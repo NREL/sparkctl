@@ -105,6 +105,7 @@ class ClusterManager:
         config_file = self._config.directories.base / self.CONFIG_FILENAME
         with open(config_file, "w", encoding="utf-8") as f_out:
             f_out.write(self._config.model_dump_json(indent=2))
+            logger.info("Wrote sparkctl configuration to {}", config_file)
 
     def get_spark_session(self) -> SparkSession:
         """Return a SparkSession for the current cluster."""
