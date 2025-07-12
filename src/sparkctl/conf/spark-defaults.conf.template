@@ -25,3 +25,11 @@
 # spark.serializer                 org.apache.spark.serializer.KryoSerializer
 # spark.driver.memory              5g
 # spark.executor.extraJavaOptions  -XX:+PrintGCDetails -Dkey=value -Dnumbers="one two three"
+
+# This causes Spark to follow the Parquet specification when writing timestamps.
+# That in turn allows Pandas and DuckDB to properly interpret the timestamps.
+# Spark's default behavior is to use a commonly-used but non-standard INT96 format.
+spark.sql.parquet.outputTimestampType TIMESTAMP_MICROS
+
+# This sets the group write bit on all files, which does not happen by default.
+spark.hadoop.fs.permissions.umask-mode 002

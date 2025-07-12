@@ -8,4 +8,5 @@
     compute_nodes
     heterogeneous_slurm_jobs
     compute_node_failures
+    custom_spark_defaults
 ```

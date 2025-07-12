@@ -34,6 +34,7 @@ RUNTIME = {
         "enable_postgres_hive_metastore"
     ].default,
     "postgres_password": None,
+    "spark_defaults_template_file": None,
 }
 APP = {
     "console_level": AppParams.model_fields["console_level"].default,

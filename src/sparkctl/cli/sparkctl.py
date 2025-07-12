@@ -120,6 +120,8 @@ def default_config(
     if postgresql_jar_file is not None:
         config.binaries.postgresql_jar_file = postgresql_jar_file
     data = config.model_dump(mode="json", exclude={"directories"})
+    # Don't hard-code the password globally.
+    data["runtime"].pop("postgres_password")
     filename = directory / DEFAULT_SETTINGS_FILENAME
     with open(filename, "w", encoding="utf-8") as f_out:
         toml.dump(data, f_out)
@@ -210,6 +212,12 @@ $ sparkctl configure --local-storage --thrift-server\n
     help=SparkRuntimeParams.model_fields["shuffle_partition_multiplier"].description,
 )
 @click.option(
+    "-t",
+    "--spark-defaults-template-file",
+    help=SparkRuntimeParams.model_fields["spark_defaults_template_file"].description,
+    callback=lambda *x: None if x[2] is None else Path(x[2]),
+)
+@click.option(
     "--local-storage/--no-local-storage",
     is_flag=True,
     default=sparkctl_settings.runtime.get("use_local_storage"),
@@ -298,6 +306,7 @@ def configure(
     node_memory_overhead_gb: int,
     dynamic_allocation: bool,
     shuffle_partition_multiplier: int,
+    spark_defaults_template_file: Path | None,
     local_storage: bool,
     connect_server: bool,
     history_server: bool,
@@ -334,6 +343,7 @@ def configure(
             node_memory_overhead_gb=node_memory_overhead_gb,
             enable_dynamic_allocation=dynamic_allocation,
             shuffle_partition_multiplier=shuffle_partition_multiplier,
+            spark_defaults_template_file=spark_defaults_template_file,
             use_local_storage=local_storage,
             start_connect_server=connect_server,
             start_history_server=history_server,

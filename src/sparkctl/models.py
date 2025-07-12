@@ -112,6 +112,11 @@ class SparkRuntimeParams(SparkctlBaseModel):
         description="Python path to set for Spark workers. Use the Python inside the Spark "
         "distribution by default.",
     )
+    spark_defaults_template_file: Path | None = Field(
+        default=None,
+        description="Path to a custom spark-defaults.conf template file. If not set, use the "
+        "sparkctl defaults.",
+    )
 
     @field_validator("postgres_password")
     @classmethod

@@ -239,7 +239,12 @@ class ClusterManager:
         status_file.write_text(StatusTracker().model_dump_json(indent=2), encoding="utf-8")
 
     def _get_spark_defaults_template(self) -> Path:
-        return Path(next(iter(sparkctl.__path__))) / "conf" / "spark-defaults.conf.template"
+        if self._config.runtime.spark_defaults_template_file is None:
+            path = Path(next(iter(sparkctl.__path__))) / "conf" / "spark-defaults.conf.template"
+        else:
+            path = Path(self._config.runtime.spark_defaults_template_file)
+            logger.info("Use custom Spark defaults template %s", path)
+        return path
 
     def _get_spark_env_template(self) -> Path:
         return Path(next(iter(sparkctl.__path__))) / "conf" / "spark-env.sh"
@@ -268,13 +273,6 @@ class ClusterManager:
         with open(defaults_file, "a") as f_out:
             f_out.write(
                 """
-# This causes Spark to follow the Parquet specification when writing timestamps.
-# That in turn allows Pandas and DuckDB to properly interpret the timestamps.
-# Spark's default behavior is to use a commonly-used but non-standard INT96 format.
-spark.sql.parquet.outputTimestampType TIMESTAMP_MICROS
-
-# This sets the group write bit on all files, which does not happen by default.
-spark.hadoop.fs.permissions.umask-mode 002
 """
             )
             f_out.write(f"spark.driver.memory {rt_params.driver_memory_gb}g\n")

@@ -1,10 +1,12 @@
 import json
 import subprocess
 import sys
+from pathlib import Path
 
 import toml
 from click.testing import CliRunner
 
+import sparkctl
 from sparkctl.cli.sparkctl import cli
 
 
@@ -98,3 +100,37 @@ def test_invalid_executor_memory(setup_local_env):
     result = runner.invoke(cli, cmd)
     assert result.exit_code == 1
     assert "cannot be more than worker_memory_gb" in result.stderr
+
+
+def test_spark_defaults_template(setup_local_env):
+    _, tmp_path = setup_local_env
+    template_file = Path(next(iter(sparkctl.__path__))) / "conf" / "spark-defaults.conf.template"
+    new_template_file = tmp_path / "spark-defaults.conf"
+    lines: list[str] = []
+    found_timestamp_setting = False
+    for line in template_file.read_text(encoding="utf-8").splitlines():
+        if "TIMESTAMP_MICROS" in line:
+            found_timestamp_setting = True
+            continue
+        lines.append(line)
+    assert found_timestamp_setting
+    new_template_file.write_text("\n".join(lines), encoding="utf-8")
+    cmd = [
+        "configure",
+        "--directory",
+        str(tmp_path),
+        "--spark-defaults-template-file",
+        str(new_template_file),
+    ]
+    filename = tmp_path / "conf" / "spark-defaults.conf"
+    assert not filename.exists()
+    runner = CliRunner()
+    result = runner.invoke(cli, cmd)
+    assert result.exit_code == 0
+    assert filename.exists()
+
+    found_timestamp_setting = False
+    for line in filename.read_text(encoding="utf-8").splitlines():
+        if "TIMESTAMP_MICROS" in line:
+            found_timestamp_setting = True
+    assert not found_timestamp_setting
