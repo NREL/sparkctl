@@ -65,6 +65,7 @@ class SparkProcessRunner:
         """Start the Spark worker processes."""
         # Calling Spark's start-workers.sh doesn't work because there is no way to forward
         # SPARK_CONF_DIR and JAVA_HOME through ssh in their scripts.
+        # In a Slurm environment, we could srun or mpiexec. This works everywhere.
         start_script = self._sbin_cmd("start-worker.sh")
         tmp_script = self._make_start_worker_script(start_script, memory_gb)
         try:
@@ -177,8 +178,9 @@ export JAVA_HOME={self._java_path}
                 options.append(f"--no-{field}")
         rmon_exec = shutil.which("rmon")
         opts = " ".join(options)
+        output_dir = self._config.directories.base / "stats-output"
         return f"""
-{rmon_exec} collect {opts} --interval {rmon.interval} --output {self._config.directories.base} --overwrite --plots &
+{rmon_exec} collect {opts} --interval {rmon.interval} --output {output_dir} --overwrite --plots --daemon &
 echo $! > {self._config.directories.base}/rmon_$(hostname).pid
 """
 
