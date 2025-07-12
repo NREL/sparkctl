@@ -13,7 +13,7 @@ from sparkctl import (
 
 def test_cluster_manager_workers(setup_local_env: tuple[SparkConfig, Path]):
     config, _ = setup_local_env
-    mgr = ClusterManager(config)
+    mgr = ClusterManager.from_config(config)
     mgr.configure()
     workers = mgr.get_workers()
     assert workers == [socket.gethostname()]
@@ -30,7 +30,7 @@ def test_cluster_manager(setup_local_env: tuple[SparkConfig, Path]):
     config.directories.metastore_dir = output_dir / "metastore_db"
     config.resource_monitor.enabled = True
     assert not is_rmon_running()
-    mgr = ClusterManager(config)
+    mgr = ClusterManager.from_config(config)
     mgr.configure()
     try:
         mgr.start()

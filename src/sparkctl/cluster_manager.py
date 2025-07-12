@@ -35,6 +35,58 @@ class ClusterManager:
         self._intf.run_checks()
 
     @classmethod
+    def from_config(cls, config: SparkConfig) -> Self:
+        """Create a ClusterManager from a config instance.
+
+        Examples
+        --------
+        >>> from sparkctl import ClusterManager, make_default_spark_config
+        >>> config = make_default_spark_config()
+        >>> config.runtime.start_connect_server = True
+        >>> mgr = ClusterManager.from_config(config)
+
+        See also
+        --------
+        from_config_directory
+        """
+        return cls(config)
+
+    @classmethod
+    def from_config_directory(cls, directory: Path | str | None = None) -> Self:
+        """Load the cluster manager from a directory containg a previously-created sparkctl config.
+
+        Parameters
+        ----------
+        directory
+            Directory containing the sparkctl configuration files.
+            Defaults to the current directory.
+
+        Examples
+        --------
+        >>> from sparkctl import ClusterManager
+        >>> mgr = ClusterManager.from_config_directory()
+
+        >>> mgr = ClusterManager.from_config_directory(directory="path/to/sparkctl/config")
+
+        See also
+        --------
+        from_config
+        """
+        path = Path() if directory is None else Path(directory)
+        config_file = path / cls.CONFIG_FILENAME
+        if not config_file.exists():
+            msg = f"{path} is not a valid cluster manager directory because {config_file} does not exist"
+            raise InvalidConfiguration(msg)
+
+        config = SparkConfig.model_validate_json(config_file.read_text(encoding="utf-8"))
+        status_file = path / cls.STATUS_FILENAME
+        if status_file.exists():
+            status = StatusTracker.model_validate_json(status_file.read_text(encoding="utf-8"))
+        else:
+            status = None
+        return cls(config, status=status)
+
+    @classmethod
     def start_from_config_file(cls, config_file: Path | None = None) -> Self:
         """Create a ClusterManager from a config file, configure the cluster, and start it.
 
@@ -42,6 +94,13 @@ class ClusterManager:
         ----------
         config_file
             If set, load a SparkConfig from it. Otherwise, load the default SparkConfig.
+
+        Examples
+        --------
+        >>> from sparkctl import ClusterManager
+        >>> mgr = ClusterManager.start_from_config_file()
+
+        >>> mgr = ClusterManager.start_from_config_file("config.json")
         """
         # TODO: in this mode, we should ensure that we stop the cluster when the user exits
         # Python (ipython/jupyter sessions).
@@ -56,28 +115,19 @@ class ClusterManager:
         mgr.start()
         return mgr
 
-    @classmethod
-    def load(cls, directory: Path) -> Self:
-        """Load the cluster manager from a directory."""
-        config_file = directory / cls.CONFIG_FILENAME
-        if not config_file.exists():
-            msg = f"{directory} is not a valid cluster manager directory because {config_file} does not exist"
-            raise InvalidConfiguration(msg)
-
-        config = SparkConfig.model_validate_json(config_file.read_text(encoding="utf-8"))
-        status_file = directory / cls.STATUS_FILENAME
-        if status_file.exists():
-            status = StatusTracker.model_validate_json(status_file.read_text(encoding="utf-8"))
-        else:
-            status = None
-        return cls(config, status=status)
-
     def clean(self) -> None:
         """Delete all Spark runtime files in the directory."""
         logger.warning("clean is not implemented yet")
 
     def configure(self) -> None:
-        """Configure a Spark cluster based on the input parameters."""
+        """Configure a Spark cluster based on the input parameters.
+
+        Examples
+        --------
+        >>> from sparkctl import ClusterManager
+        >>> mgr = ClusterManager.start_from_config_file("config.json")
+        >>> mgr.configure()
+        """
         self._config.directories.clean_spark_conf_dir()
         shutil.copyfile(self._get_spark_log_file(), self._config.directories.get_spark_log_file())
         spark_defaults_template = self._get_spark_defaults_template()
@@ -108,19 +158,34 @@ class ClusterManager:
             logger.info("Wrote sparkctl configuration to {}", config_file)
 
     def get_spark_session(self) -> SparkSession:
-        """Return a SparkSession for the current cluster."""
+        """Return a SparkSession for the current cluster.
+
+        Examples
+        --------
+        >>> spark = mgr.get_spark_session()
+        >>> spark.createDataFrame([(1, 2), (3, 4)], ["a", "b"]).show()
+        """
         if not self._config.runtime.start_connect_server:
             msg = "The Spark config does not enable the Spark Connect Server."
             raise InvalidConfiguration(msg)
         return SparkSession.builder.remote("sc://localhost:15002").getOrCreate()
 
     def set_workers(self, workers: list[str]) -> None:
-        """Set the workers for the cluster.
+        """Set the workers for the cluster. Must be called after :meth:`configure` and before
+        :meth:`start`.
 
         Parameters
         ----------
         workers:
-            Worker node names, will be used as ssh targets.
+            Worker node names or IP addresses, will be used as ssh targets.
+
+        Examples
+        --------
+        >>> from sparkctl import ClusterManager
+        >>> mgr = ClusterManager.from_config(make_default_spark_config())
+        >>> mgr.configure()
+        >>> mgr.set_workers(["worker1", "worker2"])
+        >>> mgr.start()
         """
         self._write_workers(workers)
 
@@ -129,7 +194,15 @@ class ClusterManager:
         return self._read_workers()
 
     def start(self) -> None:
-        """Start the Spark cluster."""
+        """Start the Spark cluster.
+
+        Examples
+        --------
+        >>> from sparkctl import ClusterManager
+        >>> mgr = ClusterManager.start_from_config_file("config.json")
+        >>> mgr.configure()
+        >>> mgr.start()
+        """
         url = make_spark_url(gethostname())
         runner = SparkProcessRunner(self._config, url)
 
@@ -200,7 +273,16 @@ class ClusterManager:
         logger.info("Spark worker memory = {} GB", worker_memory_gb)
 
     def stop(self) -> None:
-        """Stop all Spark processes."""
+        """Stop all Spark processes.
+
+        Examples
+        --------
+        >>> from sparkctl import ClusterManager
+        >>> mgr = ClusterManager.start_from_config_file("config.json")
+        >>> mgr.configure()
+        >>> mgr.start()
+        >>> mgr.stop()
+        """
         status_file = self._config.directories.base / self.STATUS_FILENAME
         if status_file.exists():
             tracker = StatusTracker.model_validate_json(status_file.read_text(encoding="utf-8"))
@@ -272,10 +354,6 @@ class ClusterManager:
     def _add_spark_settings_to_defaults_file(self, defaults_file: Path) -> None:
         rt_params = self._config.runtime
         with open(defaults_file, "a") as f_out:
-            f_out.write(
-                """
-"""
-            )
             f_out.write(f"spark.driver.memory {rt_params.driver_memory_gb}g\n")
             f_out.write(f"spark.driver.maxResultSize {rt_params.driver_memory_gb}g\n")
             logger.info("Set driver memory to {} GB", rt_params.driver_memory_gb)

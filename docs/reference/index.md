@@ -7,7 +7,7 @@
     :caption: Contents:
     :hidden:
 
-    cluster_manager_api
+    sparkctl_api
     hpc/index
     cli_reference
 ```

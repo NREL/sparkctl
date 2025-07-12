@@ -6,9 +6,10 @@ This Spark [documentation page](https://spark.apache.org/docs/latest/cluster-ove
 an overview of how Spark operates.
 
 ## Cluster Mode
-sparkctl always configures Spark clusters in [standalone mode]
-(https://spark.apache.org/docs/latest/spark-standalone.html). Given that sparkctl expects clusters
-to be ephemeral, the greater sophistication of YARN and Kubernetes cluster managers is not required.
+sparkctl always configures Spark clusters in
+[standalone mode](https://spark.apache.org/docs/latest/spark-standalone.html). Given that sparkctl
+expects clusters to be ephemeral, the greater sophistication of YARN and Kubernetes cluster managers
+is not required.
 
 ## Submitting Applications
 Please refer to this [documentation page](https://spark.apache.org/docs/latest/submitting-applications.html)
