@@ -134,3 +134,27 @@ def test_spark_defaults_template(setup_local_env):
         if "TIMESTAMP_MICROS" in line:
             found_timestamp_setting = True
     assert not found_timestamp_setting
+
+
+def test_custom_spark_level(setup_local_env):
+    _, tmp_path = setup_local_env
+    log_level = "warn"
+    cmd = [
+        "configure",
+        "--directory",
+        str(tmp_path),
+        "--spark-log-level",
+        log_level,
+    ]
+    filename = tmp_path / "conf" / "log4j2.properties"
+    assert not filename.exists()
+    runner = CliRunner()
+    result = runner.invoke(cli, cmd)
+    assert result.exit_code == 0
+    assert filename.exists()
+
+    found_log_level = False
+    for line in filename.read_text(encoding="utf-8").splitlines():
+        if f"rootLogger.level = {log_level}" in line:
+            found_log_level = True
+    assert found_log_level

@@ -246,6 +246,14 @@ $ sparkctl configure --local-storage --thrift-server\n
     help=SparkRuntimeParams.model_fields["start_thrift_server"].description,
 )
 @click.option(
+    "-l",
+    "--spark-log-level",
+    default=sparkctl_settings.runtime.get("spark_log_level"),
+    type=click.Choice(["debug", "info", "warn", "error"]),
+    show_default=True,
+    help=SparkRuntimeParams.model_fields["spark_log_level"].description,
+)
+@click.option(
     "--hive-metastore/--no-hive-metastore",
     is_flag=True,
     default=sparkctl_settings.runtime.get("enable_hive_metastore"),
@@ -311,6 +319,7 @@ def configure(
     connect_server: bool,
     history_server: bool,
     thrift_server: bool,
+    spark_log_level: str | None,
     hive_metastore: bool,
     postgres_hive_metastore: bool,
     metastore_dir: Path,
@@ -348,6 +357,7 @@ def configure(
             start_connect_server=connect_server,
             start_history_server=history_server,
             start_thrift_server=thrift_server,
+            spark_log_level=spark_log_level,
             enable_hive_metastore=hive_metastore,
             enable_postgres_hive_metastore=postgres_hive_metastore,
             python_path=python_path,

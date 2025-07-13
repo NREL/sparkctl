@@ -123,7 +123,10 @@ class ClusterManager:
         >>> mgr.configure()
         """
         self._config.directories.clean_spark_conf_dir()
-        shutil.copyfile(self._get_spark_log_file(), self._config.directories.get_spark_log_file())
+        log_config = self._config.directories.get_spark_log_file()
+        shutil.copyfile(self._get_spark_log_file_template(), log_config)
+        if self._config.runtime.spark_log_level is not None:
+            self._customize_spark_log_level(log_config)
         spark_defaults_template = self._get_spark_defaults_template()
         spark_defaults = self._config.directories.get_spark_defaults_file()
         spark_env_template = self._get_spark_env_template()
@@ -363,7 +366,7 @@ class ClusterManager:
     def _get_spark_env_template(self) -> Path:
         return Path(next(iter(sparkctl.__path__))) / "conf" / "spark-env.sh"
 
-    def _get_spark_log_file(self) -> Path:
+    def _get_spark_log_file_template(self) -> Path:
         return Path(next(iter(sparkctl.__path__))) / "conf" / "log4j2.properties"
 
     def _get_worker_memory_gb(self, driver_memory_gb: int) -> int:
@@ -464,6 +467,14 @@ spark.executor.memory {executor_memory_gb}g
             partitions,
             executor_memory_gb,
         )
+
+    def _customize_spark_log_level(self, log_config: Path) -> None:
+        with fileinput.input(files=[log_config], inplace=True) as f_out:
+            for line in f_out:
+                if line.startswith("rootLogger.level"):
+                    line = f"rootLogger.level = {self._config.runtime.spark_log_level}\n"
+                print(line, end="")
+        logger.info("Set custom Spark log level = {}", self._config.runtime.spark_log_level)
 
     def _enable_metastore(self, defaults_file: Path) -> None:
         rt_params = self._config.runtime

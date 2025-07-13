@@ -23,6 +23,7 @@ RUNTIME = {
     "start_connect_server": SparkRuntimeParams.model_fields["start_connect_server"].default,
     "start_history_server": SparkRuntimeParams.model_fields["start_history_server"].default,
     "start_thrift_server": SparkRuntimeParams.model_fields["start_thrift_server"].default,
+    "spark_log_level": SparkRuntimeParams.model_fields["spark_log_level"].default,
     "enable_dynamic_allocation": SparkRuntimeParams.model_fields[
         "enable_dynamic_allocation"
     ].default,

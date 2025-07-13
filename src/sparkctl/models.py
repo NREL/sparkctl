@@ -87,6 +87,10 @@ class SparkRuntimeParams(SparkctlBaseModel):
         default=False,
         description="Enable the Thrift server to connect a SQL client.",
     )
+    spark_log_level: str | None = Field(
+        default=None,
+        description="Set the root log level for all Spark processes. Defaults to Spark's defaults.",
+    )
     enable_dynamic_allocation: bool = Field(
         default=False,
         description="Enable Spark dynamic resource allocation.",
