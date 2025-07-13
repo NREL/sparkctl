@@ -22,9 +22,9 @@ going on.
   only be one open Spark session at a time. This means that you cannot simultaneously run jobs
   through PySpark and the Thrift Server.
 - PostgreSQL database: Optional database for the metastore that supports multiple Spark sessions.
-  This can be enabled in the script `configure_and_start_spark.sh`. It will start a postgres
+  This can be enabled with `sparkctl configure --postgres-hive-metastore`. It will start a postgres
   database and initialize it through Hive.
-- Data sources: Parquet/CSV files on the Lustre filesystem.
+- Data sources: Parquet/CSV files on the shared filesystem.
 - Views: Read-only views into the data sources that get registered in the database.
 
 ### Workflow
@@ -47,22 +47,22 @@ into the head node of the Slurm allocation.
 how to create several views in a batch process.
 
    Suppose that your data sources are located at `/projects/my-project/data`.
-   
+
    Create one view. (Note the backslashes that prevent the shell from acting on the backticks.)
    ```console
    $ spark-sql -e \
        "CREATE VIEW my_view AS SELECT * FROM parquet.\`/projects/my-project/data/table1.parquet\`"
    ```
-   
+
    Create several views.
-   
+
    Add lines like these to a text file called `views.txt`:
    ```
    CREATE VIEW my_view1 AS SELECT * FROM parquet.`/projects/my-project/data/table1.parquet;`
    CREATE VIEW my_view2 AS SELECT * FROM parquet.`/projects/my-project/data/table2.parquet;`
    CREATE VIEW my_view3 AS SELECT * FROM parquet.`/projects/my-project/data/table3.parquet;`
    ```
-   
+
    Execute the commands with `spark-sql`.
    ```console
    $ spark-sql -f views.txt

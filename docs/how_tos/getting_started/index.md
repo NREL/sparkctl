@@ -5,6 +5,6 @@
     :maxdepth: 2
     :caption: Contents:
 
-    deploy_sparkctl
     installation
+    deploy_sparkctl
 ```

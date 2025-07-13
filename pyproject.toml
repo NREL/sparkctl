@@ -28,13 +28,16 @@ dependencies = [
     "loguru >= 0.7.2",
     "psutil",
     "pydantic >= 2.7, < 3",
-    "pyspark-client >= 4, < 5",
+    "pyspark-client == 4.0.0",
     "rich_click",
     "rmon >= 0.4.0",
     "toml",
 ]
 
 [project.optional-dependencies]
+pyspark = [
+    "pyspark == 4.0.0",
+]
 dev = [
     "furo",
     "mypy >=1.13, < 2",

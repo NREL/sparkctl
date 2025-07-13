@@ -1,4 +1,14 @@
+(deploy-sparkctl)=
+
 # Deploy sparkctl in an HPC environment
+This is a one-time operation to be performed by an administrator or a user with write access to a
+common location on the shared filesystem.
+
+If you are a sparkctl user, you should not need to perform this step unless you want to use a
+custom version of Spark.
+
+------------------------
+
 Sparkctl requires that Apache Spark and all dependent software are installed on the shared
 filesystem, accessible by all compute nodes.
 

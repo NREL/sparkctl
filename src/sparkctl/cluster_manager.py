@@ -469,12 +469,16 @@ spark.executor.memory {executor_memory_gb}g
         )
 
     def _customize_spark_log_level(self, log_config: Path) -> None:
+        changed = False
         with fileinput.input(files=[log_config], inplace=True) as f_out:
             for line in f_out:
                 if line.startswith("rootLogger.level"):
                     line = f"rootLogger.level = {self._config.runtime.spark_log_level}\n"
+                    changed = True
                 print(line, end="")
-        logger.info("Set custom Spark log level = {}", self._config.runtime.spark_log_level)
+
+        if changed:
+            logger.info("Set custom Spark log level = {}", self._config.runtime.spark_log_level)
 
     def _enable_metastore(self, defaults_file: Path) -> None:
         rt_params = self._config.runtime

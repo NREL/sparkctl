@@ -72,8 +72,8 @@ class SparkProcessRunner:
         tmp_script = self._make_start_worker_script(start_script, memory_gb)
         try:
             for worker in workers:
-                cmd = f"ssh {worker} {tmp_script}"
-                subprocess.run(cmd, check=True, shell=True)
+                cmd = ["ssh", worker, str(tmp_script)]
+                subprocess.run(cmd, check=True)
         finally:
             tmp_script.unlink()
 
@@ -87,8 +87,8 @@ class SparkProcessRunner:
         tmp_script = self._make_stop_worker_script(self._config.resource_monitor.enabled)
         ret = 0
         for worker in workers:
-            cmd = f"ssh {worker} bash {tmp_script}"
-            proc = subprocess.run(shlex.split(cmd))
+            cmd = ["ssh", worker, str(tmp_script)]
+            proc = subprocess.run(cmd)
             if proc.returncode != 0:
                 logger.error("Failed to stop worker on {}: {}", worker, proc.returncode)
                 ret = proc.returncode
