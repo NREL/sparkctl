@@ -3,9 +3,10 @@ import shlex
 import shutil
 import stat
 import subprocess
-from loguru import logger
 from pathlib import Path
 from typing import Any
+
+from loguru import logger
 
 from sparkctl.models import SparkConfig
 
@@ -30,7 +31,8 @@ class SparkProcessRunner:
 
     def start_connect_server(self) -> None:
         """Start the Spark connect server."""
-        self._check_run_command(self._start_connect_server_cmd())
+        cmd = f"{self._start_connect_server_cmd()} --master {self._url}"
+        self._check_run_command(cmd)
 
     def stop_connect_server(self) -> int:
         """Stop the Spark connect server."""

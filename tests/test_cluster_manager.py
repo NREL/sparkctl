@@ -3,7 +3,6 @@ import time
 from pathlib import Path
 
 import psutil
-from pyspark.sql import SparkSession
 
 from sparkctl import (
     ClusterManager,
@@ -22,9 +21,8 @@ def test_cluster_manager_workers(setup_local_env: tuple[SparkConfig, Path]):
     assert mgr.get_workers() == new_workers
 
 
-def test_cluster_manager(setup_local_env: tuple[SparkConfig, Path]):
+def test_managed_start(setup_local_env: tuple[SparkConfig, Path]):
     config, output_dir = setup_local_env
-    config.runtime.start_connect_server = True
     config.directories.base = output_dir
     config.directories.spark_scratch = output_dir / "spark_scratch"
     config.directories.metastore_dir = output_dir / "metastore_db"
@@ -32,26 +30,10 @@ def test_cluster_manager(setup_local_env: tuple[SparkConfig, Path]):
     assert not is_rmon_running()
     mgr = ClusterManager.from_config(config)
     mgr.configure()
-    try:
-        mgr.start()
-        spark = SparkSession.builder.remote("sc://localhost:15002").getOrCreate()
-        df = spark.createDataFrame([(1, 2), (3, 4)], ["a", "b"])
-        assert df.count() == 2
-        assert is_rmon_running()
-    finally:
-        mgr.stop()
-        assert wait_for_rmon_to_stop()
-
-
-def test_managed_start(setup_local_env: tuple[SparkConfig, Path]):
-    config, output_dir = setup_local_env
-    config.directories.base = output_dir
-    config.directories.spark_scratch = output_dir / "spark_scratch"
-    mgr = ClusterManager.from_config(config)
-    mgr.configure()
     with mgr.managed_cluster() as spark:
         df = spark.createDataFrame([(1, 2), (3, 4)], ["a", "b"])
         assert df.count() == 2
+    assert wait_for_rmon_to_stop()
 
 
 def wait_for_rmon_to_stop(timeout: int = 30):

@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -153,3 +154,4 @@ def setup_local_env(tmp_path):
     os.environ["ROOT_PATH_FOR_DYNACONF"] = str(tmp_path)
     yield config, tmp_path
     os.environ.pop("ROOT_PATH_FOR_DYNACONF")
+    shutil.rmtree(tmp_path)

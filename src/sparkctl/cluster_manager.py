@@ -187,7 +187,7 @@ class ClusterManager:
         """Return the current worker node names."""
         return self._read_workers()
 
-    def start(self) -> None:
+    def start(self, print_env_paths: bool = True) -> None:
         """Start the Spark cluster. The caller must have called :meth:`configure` beforehand.
 
         The environment variables `SPARK_CONF_DIR` and `JAVA_HOME` are set to correct values for
@@ -226,7 +226,10 @@ class ClusterManager:
                 self._stop_postgres()
             raise
 
-        _print_conf_dir_msg(self._config.directories.get_spark_conf_dir())
+        if print_env_paths:
+            _print_env_paths_msg(
+                self._config.directories.get_spark_conf_dir(), self._config.binaries.java_path
+            )
         status_file = self._config.directories.base / self.STATUS_FILENAME
         with open(status_file, "w", encoding="utf-8") as f_out:
             f_out.write(tracker.model_dump_json(indent=2))
@@ -255,7 +258,7 @@ class ClusterManager:
                 logger.info("Enabling the Spark Connect Server.")
                 self._config.runtime.start_connect_server = True
             self.configure()
-            self.start()
+            self.start(print_env_paths=False)
             spark = self.get_spark_session()
             yield spark
         finally:
@@ -573,14 +576,15 @@ spark.history.fs.logDirectory file://{events_dir}
         return [x for x in workers_file.read_text(encoding="utf-8").splitlines() if x]
 
 
-def _print_conf_dir_msg(conf_dir: Path) -> None:
+def _print_env_paths_msg(conf_dir: Path, java_dir: Path) -> None:
     print(
         f"""
 ###############################################################################
 
-Run this command to use the Spark configuration:
+Set these environment variables to use the Spark configuration:
 
 export SPARK_CONF_DIR={conf_dir}
+export JAVA_HOME={java_dir}
 
 ###############################################################################
 """,
