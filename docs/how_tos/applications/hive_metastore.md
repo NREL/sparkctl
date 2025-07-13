@@ -18,7 +18,6 @@ This has a limitation: only one client can be connected to the metastore at a ti
 If you need multiple simultaneous connections to the metastore, you can use
 [PostgreSQL](https://www.postgresql.org) as the backend instead by running the following command:
 ```
-$ configure_and_start_spark.sh --metastore-dir /path/to/my/metastore
 $ sparkctl configure --thrift-server --hive-metastore --postgres-hive-metastore --metastore-dir /path/to/my/metastore
 ```
 This takes a few extra minutes to start the first time, as it has to download a container and

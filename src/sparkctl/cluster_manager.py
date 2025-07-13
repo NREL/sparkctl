@@ -5,9 +5,10 @@ import shlex
 import shutil
 import subprocess
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 from socket import gethostname
-from typing import Self
+from typing import Generator, Self
 
 from loguru import logger
 from pyspark.sql import SparkSession
@@ -47,13 +48,35 @@ class ClusterManager:
 
         See also
         --------
-        from_config_directory
+        from_config_file
         """
         return cls(config)
 
     @classmethod
-    def from_config_directory(cls, directory: Path | str | None = None) -> Self:
-        """Load the cluster manager from a directory containg a previously-created sparkctl config.
+    def from_config_file(cls, config_file: Path | str | None = None) -> Self:
+        """Create a ClusterManager from a config file. If filename is None, use the default
+        config file (e.g., ~/.sparkctl.toml).
+
+        Examples
+        --------
+        >>> from sparkctl import ClusterManager
+        >>> mgr = ClusterManager.from_config_file(config_file="config.json")
+
+        See also
+        --------
+        from_config
+        """
+        config = (
+            make_default_spark_config()
+            if config_file is None
+            else SparkConfig.from_file(config_file)
+        )
+        return cls.from_config(config)
+
+    @classmethod
+    def load(cls, directory: Path | str | None = None) -> Self:
+        """Load an active cluster manager from a directory containg a previously-created sparkctl
+        config.
 
         Parameters
         ----------
@@ -64,9 +87,9 @@ class ClusterManager:
         Examples
         --------
         >>> from sparkctl import ClusterManager
-        >>> mgr = ClusterManager.from_config_directory()
+        >>> mgr = ClusterManager.load()
 
-        >>> mgr = ClusterManager.from_config_directory(directory="path/to/sparkctl/config")
+        >>> mgr = ClusterManager.load(directory="path/to/sparkctl/config")
 
         See also
         --------
@@ -86,35 +109,6 @@ class ClusterManager:
             status = None
         return cls(config, status=status)
 
-    @classmethod
-    def start_from_config_file(cls, config_file: Path | None = None) -> Self:
-        """Create a ClusterManager from a config file, configure the cluster, and start it.
-
-        Parameters
-        ----------
-        config_file
-            If set, load a SparkConfig from it. Otherwise, load the default SparkConfig.
-
-        Examples
-        --------
-        >>> from sparkctl import ClusterManager
-        >>> mgr = ClusterManager.start_from_config_file()
-
-        >>> mgr = ClusterManager.start_from_config_file("config.json")
-        """
-        # TODO: in this mode, we should ensure that we stop the cluster when the user exits
-        # Python (ipython/jupyter sessions).
-        # Could also make a context manager option for script environments.
-        config = (
-            make_default_spark_config()
-            if config_file is None
-            else SparkConfig.from_file(config_file)
-        )
-        mgr = cls(config)
-        mgr.configure()
-        mgr.start()
-        return mgr
-
     def clean(self) -> None:
         """Delete all Spark runtime files in the directory."""
         logger.warning("clean is not implemented yet")
@@ -125,7 +119,7 @@ class ClusterManager:
         Examples
         --------
         >>> from sparkctl import ClusterManager
-        >>> mgr = ClusterManager.start_from_config_file("config.json")
+        >>> mgr = ClusterManager.from_config_file("config.json")
         >>> mgr.configure()
         """
         self._config.directories.clean_spark_conf_dir()
@@ -194,12 +188,15 @@ class ClusterManager:
         return self._read_workers()
 
     def start(self) -> None:
-        """Start the Spark cluster.
+        """Start the Spark cluster. The caller must have called :meth:`configure` beforehand.
+
+        The environment variables `SPARK_CONF_DIR` and `JAVA_HOME` are set to correct values for
+        the current process.
 
         Examples
         --------
         >>> from sparkctl import ClusterManager
-        >>> mgr = ClusterManager.start_from_config_file("config.json")
+        >>> mgr = ClusterManager.from_config_file("config.json")
         >>> mgr.configure()
         >>> mgr.start()
         """
@@ -236,6 +233,37 @@ class ClusterManager:
 
         os.environ["SPARK_CONF_DIR"] = str(self._config.directories.get_spark_conf_dir())
         os.environ["JAVA_HOME"] = str(self._config.binaries.java_path)
+
+    @contextmanager
+    def managed_cluster(self) -> Generator[SparkSession, None, None]:
+        """Configure and start the Spark cluster, yield a SparkSession in a context manager,
+        stop the cluster after exit.
+
+        The environment variables `SPARK_CONF_DIR` and `JAVA_HOME` are set to correct values for
+        the current process while the context is active and cleared when complete.
+
+        Examples
+        --------
+        >>> from sparkctl import ClusterManager
+        >>> mgr = ClusterManager.from_config_file("config.json")
+        >>> with mgr.managed_start() as spark:
+            df = spark.createDataFrame([(1, 2), (3, 4)], ["a", "b"])
+            df.show()
+        """
+        try:
+            if not self._config.runtime.start_connect_server:
+                logger.info("Enabling the Spark Connect Server.")
+                self._config.runtime.start_connect_server = True
+            self.configure()
+            self.start()
+            spark = self.get_spark_session()
+            yield spark
+        finally:
+            self.stop()
+            logger.info("Stopped Spark cluster processes and SparkSession")
+            # Clear the environment variables set by start()
+            os.environ.pop("SPARK_CONF_DIR", None)
+            os.environ.pop("JAVA_HOME", None)
 
     def _start(self, runner: SparkProcessRunner, tracker: StatusTracker) -> None:
         workers = self._read_workers()
@@ -278,7 +306,7 @@ class ClusterManager:
         Examples
         --------
         >>> from sparkctl import ClusterManager
-        >>> mgr = ClusterManager.start_from_config_file("config.json")
+        >>> mgr = ClusterManager.from_config_file("config.json")
         >>> mgr.configure()
         >>> mgr.start()
         >>> mgr.stop()

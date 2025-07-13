@@ -414,7 +414,7 @@ def start(ctx: click.Context, wait: bool, directory: Path, timeout: float | None
         file_level=ctx.find_root().params["console_level"],
         mode="a",
     )
-    mgr = ClusterManager.from_config_directory(directory)
+    mgr = ClusterManager.load(directory)
     mgr.start()
     if wait:
         if timeout is None:
@@ -454,7 +454,7 @@ $ sparkctl stop --directory ./my-spark-config\n
 )
 def stop(directory: Path) -> None:
     """Stop a Spark cluster."""
-    mgr = ClusterManager.from_config_directory(directory)
+    mgr = ClusterManager.load(directory)
     mgr.stop()
 
 
@@ -462,7 +462,7 @@ def stop(directory: Path) -> None:
 @click.argument("directory", callback=lambda *x: Path(x[2]))
 def clean(directory: Path) -> None:
     """Delete all Spark runtime files in the directory."""
-    mgr = ClusterManager.from_config_directory(directory)
+    mgr = ClusterManager.load(directory)
     mgr.clean()
 
 

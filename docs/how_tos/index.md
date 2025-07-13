@@ -10,4 +10,5 @@
     configuration/index
     execution/index
     applications/index
+    debugging/index
 ```

@@ -1,4 +1,4 @@
-# Run Python jobs on an Spark Cluster on an HPC
+# Run Python jobs interactively on an Spark Cluster on an HPC
 
 In this tutorial you will learn how to start a Spark cluster on HPC compute nodes and then run
 Spark jobs in Python through `pyspark-client` with the Spark Connect Server.
@@ -52,30 +52,6 @@ Spark jobs in Python through `pyspark-client` with the Spark Connect Server.
    2025-07-12 13:00:34.764 | INFO     | sparkctl.cluster_manager:_start:181 - Started Spark connect server
    starting org.apache.spark.deploy.worker.Worker, logging to /scratch/dthom/sparkctl/spark_scratch/logs/spark-dthom-org.apache.spark.deploy.worker.Worker-1-dthom-39537s.out
    2025-07-12 13:00:37.648 | INFO     | sparkctl.cluster_manager:_start:200 - Spark worker memory = 4 GB
-   ```
-   
-   If you have configured your global sparkctl configuration file (`~/.sparkctl.toml`) with
-   desired options or want to use a previously-created `config.json`, you can use this shorter
-   procedure:
-   
-   ```python
-   from sparkctl import ClusterManager
-   
-   mgr = ClusterManager.start_from_config_file(config_file="config.json")
-   ```
-   ```console
-   2025-07-12 13:15:55.061 | INFO     | sparkctl.cluster_manager:_add_spark_settings_to_defaults_file:281 - Set driver memory to 10 GB
-   2025-07-12 13:15:55.062 | INFO     | sparkctl.cluster_manager:_config_executors:352 - Configured Spark to start 2 executors
-   2025-07-12 13:15:55.062 | INFO     | sparkctl.cluster_manager:_config_executors:353 - Set spark.sql.shuffle.partitions=10 and spark.executor.memory=2g
-   2025-07-12 13:15:55.062 | INFO     | sparkctl.cluster_manager:configure:100 - Configured Spark workers to use /scratch/dthom/sparkctl/spark_scratch for shuffle data.
-   2025-07-12 13:15:55.062 | INFO     | sparkctl.cluster_manager:_write_workers:456 - Wrote worker 1 to /scratch/dthom/sparkctl/conf/workers
-   2025-07-12 13:15:55.063 | INFO     | sparkctl.cluster_manager:configure:108 - Wrote sparkctl configuration to /scratch/dthom/sparkctl/config.json
-   starting org.apache.spark.deploy.master.Master, logging to /scratch/dthom/sparkctl/spark_scratch/logs/spark-dthom-org.apache.spark.deploy.master.Master-1-dthom-39537s.out
-   2025-07-12 13:15:57.763 | INFO     | sparkctl.cluster_manager:_start:176 - Started Spark master processes on dthom-39537s
-   starting org.apache.spark.sql.connect.service.SparkConnectServer, logging to /scratch/dthom/sparkctl/spark_scratch/logs/spark-dthom-org.apache.spark.sql.connect.service.SparkConnectServer-1-dthom-39537s.out
-   2025-07-12 13:16:00.458 | INFO     | sparkctl.cluster_manager:_start:181 - Started Spark connect server
-   starting org.apache.spark.deploy.worker.Worker, logging to /scratch/dthom/sparkctl/spark_scratch/logs/spark-dthom-org.apache.spark.deploy.worker.Worker-1-dthom-39537s.out
-   2025-07-12 13:16:03.309 | INFO     | sparkctl.cluster_manager:_start:200 - Spark worker memory = 4 GB
    ```
    
 4. Run a Spark job.
