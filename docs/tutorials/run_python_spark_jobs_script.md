@@ -1,7 +1,10 @@
-# Run Python jobs on an Spark Cluster on an HPC in a script
+# Run Python jobs on a Spark Cluster in a script
 
 In this tutorial you will learn how to start a Spark cluster on HPC compute nodes and then run
 Spark jobs in Python through `pyspark-client` with the Spark Connect Server in a script.
+
+The key difference between this and other tutorials is that this tutorial uses `sparkctl` as a
+Python library to hide the details of starting the cluster and setting environment variables.
 
 1. Allocate compute nodes, such as with Slurm. This example acquires 4 CPUs and 30 GB of memory
    for the Spark master process and user application + Spark driver and 2 complete nodes for Spark

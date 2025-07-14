@@ -1,4 +1,4 @@
-# Run Python jobs interactively on an Spark Cluster on an HPC
+# Run Python jobs interactively on a Spark Cluster
 
 In this tutorial you will learn how to start a Spark cluster on HPC compute nodes and then run
 Spark jobs in Python through `pyspark-client` with the Spark Connect Server.

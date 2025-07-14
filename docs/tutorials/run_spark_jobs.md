@@ -1,12 +1,17 @@
-# Run jobs on an Spark Cluster on an HPC
+# Run jobs on a Spark Cluster with spark-submit or pyspark
 
 In this tutorial you will learn how to start a Spark cluster on HPC compute nodes and then run
-Spark jobs with `spark-submit`.
+Spark jobs with `spark-submit` or interactively with `pyspark`.
 
-1. Install a Spark client, such as `pyspark`, such that `spark-submit` is available. For example,
+The key difference between this and other tutorials is that this workflow gives you the ability
+to customize all aspects of the Spark configuration when you launch your application. Refer to
+the CLI help, e.g. `spark-submit --help`, for details on how to set these options.
+
+1. Install a Spark client, such as `pyspark`, such that `spark-submit` and `pyspark` are available.
+   For example,
 
    ```console
-   $ pip install pyspark
+   $ pip install "sparkctl[pyspark]"
    ```
 
 2. Allocate compute nodes, such as with Slurm. This example acquires 4 CPUs and 30 GB of memory
@@ -39,29 +44,33 @@ Spark jobs with `spark-submit`.
     $ sparkctl start
     ```
 
-7. Set the environment variable `SPARK_CONF_DIR`. This will ensure that your application uses the
-   Spark settings created in step 2. Instructions will be printed to the console. By default, it
-   will be
+7. Set the environment variables `SPARK_CONF_DIR` and `JAVA_HOME`. This will ensure that your
+   application uses the Spark settings created in step 2. Instructions will be printed to the
+   console. For example:
 
    ```console
    $ export SPARK_CONF_DIR=$(pwd)/conf
-   ```
-
-8. Set the `JAVA_HOME` environment variable to be the same as the java used by Spark. This should
-   bin in your `/.sparkctl.toml` configuration file.
-
-   ```console
    $ export JAVA_HOME=/datasets/images/apache_spark/jdk-21.0.7
    ```
 
-9. Run your application. The recommended behavior is to launch your application through
+8. Run your application. The recommended behavior is to launch your application through
    `spark-submit`:
 
    ```console
    $ spark-submit --master spark://$(hostname):7077 my-job.py
    ```
 
-10. Optional, create a SparkSession in your own Python script. This is not recommended unless you
+   Alternatively, if you want to run your jobs interactively, you can use `pyspark`:
+
+   ```console
+    $ pyspark --master spark://$(hostname):7077
+    ```
+    ```python
+    >>> df = spark.createDataFrame([(x, x + 1) for x in range(1000)], ["a","b"])
+    >>> df.show()
+    ```
+
+9. Optional, create a SparkSession in your own Python script. This is not recommended unless you
    want to set breakpoints inside your code.
 
    ```console
@@ -76,7 +85,7 @@ Spark jobs with `spark-submit`.
    $ export PYSPARK_PYTHON=$(which python)
    ```
 
-11. Shut down the cluster.
+10. Shut down the cluster.
 
    ```console
    $ sparkctl stop
