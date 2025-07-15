@@ -34,5 +34,5 @@ Python library to hide the details of starting the cluster and setting environme
    # config.runtime.use_local_storage = True
    mgr = ClusterManager(config)
    with mgr.managed_cluster() as spark:
-       df = spark.createDataFrame([(x, x + 1) for x in range(1000)], ["a","b"])
-       df.show(n=5)
+       df = spark.createDataFrame([(x, x + 1) for x in range(1000)], ["a", "b"])
+       df.show()
