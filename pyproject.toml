@@ -32,6 +32,7 @@ dependencies = [
     "rich_click",
     "rmon >= 0.4.0",
     "toml",
+    "types-psutil",
 ]
 
 [project.optional-dependencies]
@@ -71,6 +72,9 @@ where = ["src"]
 
 [tool.mypy]
 check_untyped_defs = true
+exclude = [
+    "tests/data",
+]
 files = [
   "src",
   "tests",
@@ -125,13 +129,6 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 docstring-code-format = true
 docstring-code-line-length = "dynamic"
-
-[dependency-groups]
-dev = [
-    "ipython>=9.1.0",
-    "types-python-dateutil>=2.9.0.20241206",
-    "mypy >=1.13, < 2",
-]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["E402"]

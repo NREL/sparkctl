@@ -92,7 +92,11 @@ TARBALLS.append(
 def pytest_sessionstart(session):
     base_dir = Path("tests") / "data"
     base_dir.mkdir(exist_ok=True)
+    in_ci = os.getenv("CI", "false") == "true"
     for config in TARBALLS:
+        if in_ci and config["name"] in ("hadoop", "hive"):
+            # We are not currently testing these in CI.
+            continue
         dir_path: Path = config["dir_path"]
         dir_gz: Path = config["dir_gz"]
         url: str = config["url"]
@@ -106,7 +110,7 @@ def pytest_sessionstart(session):
             if extract:
                 extract_tarball(dir_gz, base_dir)
 
-    if not POSTGRES_JAR_FILE.exists():
+    if not in_ci and not POSTGRES_JAR_FILE.exists():
         try:
             download_file(POSTGRES_JAR_URL, POSTGRES_JAR_FILE)
         except Exception:
