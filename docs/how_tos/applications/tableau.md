@@ -9,7 +9,7 @@ If you have Tableau installed on your laptop, you can connect it to your Spark c
 
 In addition to Tableau, you must install this
 [ODBC driver](https://www.databricks.com/spark/odbc-drivers-download) on your laptop. It may
-require admin priviledges.
+require admin privileges.
 
 ## Concepts
 Configuring this workflow has some complexity, and so it is important that you understand what's
@@ -18,12 +18,7 @@ going on.
 ### Components
 - Thrift Server: Connects SQL clients (like Tableau) to the Spark cluster over the network.
 - Hive Metastore: Created by Spark in your working directory on the Lustre filesystem.
-- Derby database: Manages the metastore by default. This has an important limitation: there can
-  only be one open Spark session at a time. This means that you cannot simultaneously run jobs
-  through PySpark and the Thrift Server.
-- PostgreSQL database: Optional database for the metastore that supports multiple Spark sessions.
-  This can be enabled with `sparkctl configure --postgres-hive-metastore`. It will start a postgres
-  database and initialize it through Hive.
+- PostgreSQL database: Database for the metastore that supports multiple Spark sessions.
 - Data sources: Parquet/CSV files on the shared filesystem.
 - Views: Read-only views into the data sources that get registered in the database.
 
@@ -39,9 +34,11 @@ into the head node of the Slurm allocation.
 
 2. Start the Spark cluster.
    ```console
-   $ sparkctl configure
+   $ sparkctl configure --postgres-hive-metastore --thrift-server
    $ sparkctl start
    ```
+
+3. Export the environment variables `SPARK_CONF_DIR` and `JAVA_HOME` as shown on the console.
 
 4. Create one or more views. These examples show how to create one view on the command line and
 how to create several views in a batch process.
