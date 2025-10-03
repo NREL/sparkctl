@@ -6,7 +6,7 @@ providers, such as AWS, is not available. It is particularly helpful when users 
 Spark but do not have administrative control of the servers.
 
 ## Features
-- Controls startup and shutdown of Spark processes on compute nodes in a a Slurm compute node
+- Controls startup and shutdown of Spark processes on compute nodes in a Slurm compute node
   allocation.
 - Customizes the Spark configuration automatically based on the resources in the given computing
   environment. This includes executors per compute node, memory per executor, and Spark SQL shuffle

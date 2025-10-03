@@ -1,4 +1,4 @@
-# Run Python jobs on a Spark Cluster with Spark Connect
+# Run jobs with Spark Connect
 
 In this tutorial you will learn how to start a Spark cluster on HPC compute nodes with the sparkctl
 command-line interface and then run Spark jobs in Python through `pyspark-client` with the Spark

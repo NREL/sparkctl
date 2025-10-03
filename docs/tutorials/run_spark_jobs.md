@@ -1,4 +1,4 @@
-# Run jobs on a Spark Cluster with spark-submit or pyspark
+# Run jobs with spark-submit or pyspark
 
 In this tutorial you will learn how to start a Spark cluster on HPC compute nodes and then run
 Spark jobs with `spark-submit` or interactively with `pyspark`.

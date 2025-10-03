@@ -1,7 +1,7 @@
-# Run Python jobs interactively on a Spark Cluster
+# Run jobs interactively
 
 In this tutorial you will learn how to start a Spark cluster on HPC compute nodes and then run
-Spark jobs in Python through `pyspark-client` with the Spark Connect Server.
+Spark jobs interactively through `pyspark-client` with the Spark Connect Server.
 
 1. Allocate compute nodes, such as with Slurm. This example acquires 4 CPUs and 30 GB of memory
    for the Spark master process and user application + Spark driver and 2 complete nodes for Spark

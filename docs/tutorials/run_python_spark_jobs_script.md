@@ -1,7 +1,7 @@
-# Run Python jobs on a Spark Cluster in a script
+# Run jobs in a Python script
 
-In this tutorial you will learn how to start a Spark cluster on HPC compute nodes and then run
-Spark jobs in Python through `pyspark-client` with the Spark Connect Server in a script.
+In this tutorial you will learn how to run Spark jobs in a Python script with a sparkctl-managed
+Spark cluster.
 
 The key difference between this and other tutorials is that this tutorial uses `sparkctl` as a
 Python library to hide the details of starting the cluster and setting environment variables.
