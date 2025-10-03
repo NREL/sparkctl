@@ -26,7 +26,7 @@ Connect Server.
     $ sparkctl configure
     ```
     
-4. Optional, inpect the Spark configuration in `./conf`.
+4. Optional, inspect the Spark configuration in `./conf`.
     
 5. Start the cluster.
 

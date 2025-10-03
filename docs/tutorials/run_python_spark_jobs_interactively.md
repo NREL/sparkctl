@@ -1,7 +1,10 @@
-# Run jobs interactively
+# Run jobs interactively with sparkctl
 
 In this tutorial you will learn how to start a Spark cluster on HPC compute nodes and then run
 Spark jobs interactively through `pyspark-client` with the Spark Connect Server.
+
+Unlike the tutorials that call for starting Spark on the command line, sparkctl sets
+environment variables for you.
 
 1. Allocate compute nodes, such as with Slurm. This example acquires 4 CPUs and 30 GB of memory
    for the Spark master process and user application + Spark driver and 2 complete nodes for Spark
