@@ -16,9 +16,9 @@ lustre_bind_mounts=" -B /nopt:/nopt \
 module load apptainer
 mkdir -p ${pg_data_dir} ${pg_run_dir}
 apptainer instance start \
-    --env POSTGRES_PASSWORD=${pg_password} \
-    ${lustre_bind_mounts} \
-    -B ${pg_data_dir}:/var/lib/postgresql/data \
-    -B ${pg_run_dir}:/var/run/postgresql \
-    docker://postgres \
-    pg-server
+  --env POSTGRES_PASSWORD=${pg_password} \
+  ${lustre_bind_mounts} \
+  -B ${pg_data_dir}:/var/lib/postgresql/data \
+  -B ${pg_run_dir}:/var/run/postgresql \
+  docker://postgres:17 \
+  pg-server

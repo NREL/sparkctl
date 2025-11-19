@@ -44,6 +44,6 @@ $ sparkctl default-config \
     /datasets/images/apache_spark/jdk-21.0.7 \
     --hadoop-path /datasets/images/apache_spark/hadoop-3.4.1 \
     --hive-tarball /datasets/images/apache_spark/apache-hive-4.0.1-bin.tar.gz \
-    --postgresql-jar-file /datasets/images/apache_spark/jdk-21.0.7 \
+    --postgresql-jar-file /datasets/images/apache_spark/postgresql-42.7.4.jar \
     --compute-environment slurm
 ```
