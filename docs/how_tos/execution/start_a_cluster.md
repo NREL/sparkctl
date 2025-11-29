@@ -16,7 +16,7 @@ This page assumes that you have allocated compute nodes via Slurm.
     $ sparkctl configure
     ```
 
-3. Optional, inpect the Spark configuration in `./conf`.
+3. Optional, inspect the Spark configuration in `./conf`.
     
 4. Start the cluster.
 
@@ -32,8 +32,8 @@ This page assumes that you have allocated compute nodes via Slurm.
    $ export SPARK_CONF_DIR=$(pwd)/conf
    ```
 
-6. Set the `JAVA_HOME` environment variable to be the same as the java used by Spark. This should
-   bin in your `/.sparkctl.toml` configuration file.
+6. Set the `JAVA_HOME` environment variable to be the same as the Java used by Spark. This should
+   be in your `~/.sparkctl.toml` configuration file.
 
    ```console
    $ export JAVA_HOME=/datasets/images/apache_spark/jdk-21.0.7

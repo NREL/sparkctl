@@ -23,6 +23,7 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_tabs.tabs",
     "sphinx_click",
+    "sphinxcontrib.mermaid",
     "sphinxcontrib.autodoc_pydantic",
 ]
 
@@ -44,6 +45,7 @@ html_theme_options = {
     "navigation_with_keys": True,
 }
 html_static_path = ["_static"]
+html_css_files = ["custom.css"]
 
 todo_include_todos = True
 autoclass_content = "both"
@@ -59,3 +61,17 @@ copybutton_copy_empty_lines = False
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
 }
+
+# Mermaid configuration
+mermaid_d3_zoom = False
+mermaid_init_js = """
+mermaid.initialize({
+    startOnLoad: true,
+    flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true,
+        curve: 'basis'
+    },
+    theme: 'default'
+});
+"""

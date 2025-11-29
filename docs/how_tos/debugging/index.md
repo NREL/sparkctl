@@ -2,6 +2,7 @@
 # Debugging
 This page describes how to debug certain Spark errors when using sparkctl.
 
+(spark-web-ui)=
 ## Spark web UI
 The web UI is a good first place to look for problems. Connect to ports 8080 and 4040 on the nodes
 running Spark. You may need to create an ssh tunnel. This is an example that creates a tunnel
@@ -100,6 +101,7 @@ when you configure your Spark cluster:
 $ sparkctl configure --local-storage
 ```
 
+(spilling-to-disk)=
 ## Executors are spilling to disk
 If you observe that your Spark job is running very slowly, you may have a problem with executors
 spilling to disk. This occurs when the executor memory is too small to hold all of the data that it

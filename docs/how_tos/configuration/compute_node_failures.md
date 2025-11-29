@@ -1,3 +1,4 @@
+(compute-node-failures)=
 # How to handle compute node failures
 If your job uses multiple compute nodes, you may want to consider setting the flag `--no-kill` in
 your `sbatch` command.

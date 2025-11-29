@@ -1,3 +1,4 @@
+(hive-metastore)=
 # How to configure a Hive metastore
 Spark supports reading and writing data from [Apache Hive](https://hive.apache.org) as described
 [here](https://spark.apache.org/docs/latest/sql-data-sources-hive-tables.html).

@@ -27,14 +27,16 @@ Spark but do not have administrative control of the servers.
     tutorials/index
     reference/index
     explanation/index
+    faq
 ```
 
 ## How to use this guide
 - Refer to [How Tos](#how-tos) for step-by-step instructions for configuring a Spark cluster.
-- Refer to [Tutorials](#tutorials) examples of running Spark clusters in specific
+- Refer to [Tutorials](#tutorials) for examples of running Spark clusters in specific
   environments.
 - Refer to [Reference](#reference) for CLI reference material.
 - Refer to [Explanation](#explanation) for descriptions and behaviors of the software.
+- Refer to [FAQ](#sparkctl-faqs) for answers to common questions.
 
 # Indices and tables
 

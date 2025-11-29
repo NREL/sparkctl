@@ -10,6 +10,36 @@ of the Spark cluster components.
 This can be achieved with
 [Slurm heterogeneous jobs](https://slurm.schedmd.com/heterogeneous_jobs.html).
 
+```{mermaid}
+flowchart TB
+    subgraph hetjob["Heterogeneous Slurm Job"]
+        subgraph group0["Group 0: Shared Partition"]
+            subgraph shared["Shared Node (4 CPUs, 30 GB)"]
+                master["Spark Master"]
+                driver["Driver Application"]
+                user_app["Your Code"]
+            end
+        end
+
+        subgraph group1["Group 1: Exclusive Partition"]
+            subgraph worker1["Worker Node 1 (all CPUs, 240 GB)"]
+                sw1["Spark Worker"]
+                exec1["Executors"]
+            end
+            subgraph worker2["Worker Node 2 (all CPUs, 240 GB)"]
+                sw2["Spark Worker"]
+                exec2["Executors"]
+            end
+        end
+    end
+
+    driver --> master
+    master --> sw1
+    master --> sw2
+    sw1 --> exec1
+    sw2 --> exec2
+```
+
 Here is one possible configuration:
 - Spark driver memory = 10 GB
 - Spark master memory + overhead for OS and Slurm = 20 GB
