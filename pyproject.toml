@@ -50,6 +50,7 @@ dev = [
     "sphinx",
     "sphinx-click",
     "sphinx-copybutton",
+    "sphinxcontrib-mermaid",
     "autodoc_pydantic~=2.0",
     "sphinx-tabs~=3.4",
     "types-requests",

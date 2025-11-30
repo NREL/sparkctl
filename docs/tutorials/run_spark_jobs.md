@@ -36,7 +36,7 @@ the CLI help, e.g. `spark-submit --help`, for details on how to set these option
     $ sparkctl configure
     ```
     
-5. Optional, inpect the Spark configuration in `./conf`.
+5. Optional, inspect the Spark configuration in `./conf`.
     
 6. Start the cluster.
 

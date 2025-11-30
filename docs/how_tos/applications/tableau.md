@@ -11,6 +11,55 @@ In addition to Tableau, you must install this
 [ODBC driver](https://www.databricks.com/spark/odbc-drivers-download) on your laptop. It may
 require admin privileges.
 
+## Architecture
+
+```{mermaid}
+flowchart LR
+    subgraph laptop["Your Laptop"]
+        tableau["Tableau"]
+        odbc["ODBC Driver"]
+        tunnel_client["SSH Tunnel\n(localhost:10000)"]
+    end
+
+    subgraph hpc["HPC"]
+        subgraph login["Login Node"]
+            tunnel_server["SSH Tunnel\n(port forward)"]
+        end
+
+        subgraph allocation["Slurm Allocation"]
+            subgraph head["Head Node"]
+                thrift["Thrift Server\n(port 10000)"]
+                master["Spark Master"]
+                metastore["Hive Metastore"]
+            end
+
+            subgraph workers["Worker Nodes"]
+                exec1["Executors"]
+                exec2["Executors"]
+            end
+
+            subgraph storage["Shared Filesystem"]
+                parquet["Parquet/CSV Data Files"]
+                warehouse["spark-warehouse"]
+                metastore_db["metastore_db"]
+            end
+        end
+    end
+
+    tableau --> odbc
+    odbc --> tunnel_client
+    tunnel_client -->|"SSH"| tunnel_server
+    tunnel_server --> thrift
+    thrift --> master
+    master --> exec1
+    master --> exec2
+    thrift --> metastore
+    metastore --> metastore_db
+    exec1 --> parquet
+    exec2 --> parquet
+    metastore --> warehouse
+```
+
 ## Concepts
 Configuring this workflow has some complexity, and so it is important that you understand what's
 going on.
